@@ -54,6 +54,7 @@ class Settings:
 
     # Retry / pacing
     failure_sleep_seconds: int = _int("FAILURE_SLEEP_SECONDS", 5)
+    verbatim_mode: bool = _bool("VERBATIM_MODE", default=True)
 
     def validate(self) -> None:
         missing = []

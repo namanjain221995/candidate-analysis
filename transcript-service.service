@@ -1,0 +1,16 @@
+[Unit]
+Description=Candidate transcript worker (SQS + Whisper)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/opt/transcript-service
+EnvironmentFile=/opt/transcript-service/.env
+ExecStart=/opt/transcript-service/venv/bin/python /opt/transcript-service/main.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

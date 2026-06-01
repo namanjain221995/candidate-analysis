@@ -1,0 +1,15 @@
+# secrets — never commit
+.env
+
+# python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# ffmpeg downloads
+ffmpeg-*-static/
+*.tar.xz
+
+# os
+.DS_Store

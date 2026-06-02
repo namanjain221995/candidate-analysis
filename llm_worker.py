@@ -187,7 +187,8 @@ def _maybe_write_overall(s3, deliverable_prefix):
                   ContentType="application/json")
     print(f"[OVERALL] wrote {day_key} → {day_doc['result']} {day_doc['overallScore']}")
 
-    _refresh_candidate_overall(s3, deliverable_prefix)
+    # Candidate overall disabled — do not store CANDIDATE_OVERALL_result.json in S3.
+    # _refresh_candidate_overall(s3, deliverable_prefix)
 
 
 def _refresh_candidate_overall(s3, any_prefix):

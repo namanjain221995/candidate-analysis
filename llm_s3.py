@@ -61,9 +61,13 @@ def tag_folder_files(s3, bucket, folder_prefix, marker, *, pass_marker, fail_mar
         if pass_marker in rel or fail_marker in rel:
             continue
         new_key = key + marker
-        s3.copy_object(Bucket=bucket, CopySource={"Bucket": bucket, "Key": key}, Key=new_key)
-        s3.delete_object(Bucket=bucket, Key=key)
-        count += 1
+        try:
+            s3.copy_object(Bucket=bucket, CopySource={"Bucket": bucket, "Key": key}, Key=new_key)
+            s3.delete_object(Bucket=bucket, Key=key)   # requires s3:DeleteObject
+            count += 1
+        except Exception as exc:
+            # one file failing (e.g. missing DeleteObject perm) must not stop the rest
+            print(f"[TAG-FILE-ERROR] {key}: {exc}")
     return count
 
 

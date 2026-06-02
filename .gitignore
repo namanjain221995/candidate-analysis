@@ -13,3 +13,4 @@ ffmpeg-*-static/
 
 # os
 .DS_Store
+/image

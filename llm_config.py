@@ -24,6 +24,10 @@ def _int(name, default):
     return int(_str(name, str(default)))
 
 
+def _bool(name, default=False):
+    return _str(name, "true" if default else "false").lower() in {"1", "true", "yes", "y", "on"}
+
+
 @dataclass(frozen=True)
 class LLMSettings:
     aws_region:    str = _str("AWS_REGION", "us-east-1")
@@ -40,16 +44,31 @@ class LLMSettings:
     transcript_suffix: str = _str("TRANSCRIPT_SUFFIX", "_transcripts.txt")
     result_suffix:     str = _str("LLM_RESULT_SUFFIX", "_result.json")
 
+    # Pass/Fail tags appended to every file in a deliverable folder after analysis.
+    # Placed AFTER the extension (e.g. video.mp4(Fail)) so the router/transcript
+    # worker never re-process a tagged file.
+    pass_marker: str = _str("LLM_PASS_MARKER", "(Pass)")
+    fail_marker: str = _str("LLM_FAIL_MARKER", "(Fail)")
+
     prompts_dir: str = _str("PROMPTS_DIR", "prompts")
     pdf_dir:     str = _str("PDF_DIR", "pdf")
 
     failure_sleep_seconds: int = _int("FAILURE_SLEEP_SECONDS", 5)
+
+    # Salesforce callout (JWT bearer; credentials from AWS Secrets Manager).
+    sf_enabled:     bool = _bool("SF_ENABLED", False)
+    sf_secret_name: str  = _str("SF_SECRET_NAME", "sf/jwt/credentials")
+    sf_apex_path:   str  = _str("SF_APEX_PATH", "")  # e.g. /services/apexrest/deliverableResult
+    sf_audience:    str  = _str("SF_AUDIENCE", "https://login.salesforce.com")
+    sf_timeout:     int  = _int("SF_TIMEOUT", 30)
 
     def validate(self):
         missing = [k for k, v in {
             "LLM_QUEUE_URL": self.llm_queue_url,
             "OPENAI_API_KEY": self.openai_api_key,
         }.items() if not v]
+        if self.sf_enabled and not self.sf_apex_path:
+            missing.append("SF_APEX_PATH")
         if missing:
             raise SystemExit(f"[CONFIG] missing required env vars: {', '.join(missing)}")
 

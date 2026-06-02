@@ -27,6 +27,7 @@ from llm_config import LLM_SETTINGS, match_rule, is_combined_input_only
 import llm_processor
 import llm_s3
 import llm_overall
+import salesforce
 
 _stop = threading.Event()
 _lock = threading.Lock()   # serialize overall-writing to avoid races
@@ -154,21 +155,34 @@ def _find_sibling(s3, day_prefix, deliverable_name, *, want):
 
 # ── overall coordination ───────────────────────────────────────────────────────
 
+def _is_result_name(name: str) -> bool:
+    """A per-deliverable result file (possibly pass/fail-tagged), not an overall."""
+    return LLM_SETTINGS.result_suffix in name and "OVERALL" not in name
+
+
 def _maybe_write_overall(s3, deliverable_prefix):
     """After a per-deliverable result is written, check if the day is complete;
-    if so, write the day overall, then refresh the candidate overall."""
+    if so, write the day overall. (Candidate overall is disabled.)"""
     day_prefix = llm_s3.parent_prefix(deliverable_prefix)
     day_name = llm_s3.deliverable_name_from_prefix(day_prefix)
 
-    # collect all result.json under this day
-    result_keys = [k for k in llm_s3.list_prefix(s3, LLM_SETTINGS.bucket, day_prefix)
-                   if k.endswith(LLM_SETTINGS.result_suffix) and "OVERALL" not in k]
-    results = []
-    for k in result_keys:
+    # collect the LATEST result per deliverable folder under this day.
+    # A deliverable can have several result files (one per attempt); keep max attempt.
+    latest = {}   # deliverable subfolder prefix -> result dict
+    for k in llm_s3.list_prefix(s3, LLM_SETTINGS.bucket, day_prefix):
+        name = k.rsplit("/", 1)[-1]
+        if not _is_result_name(name):
+            continue
+        deliv = k.rsplit("/", 1)[0] + "/"
+        if deliv == day_prefix:          # DayOVERALL etc. sit directly in the day folder
+            continue
         try:
-            results.append(json.loads(llm_s3.read_text(s3, LLM_SETTINGS.bucket, k)))
+            r = json.loads(llm_s3.read_text(s3, LLM_SETTINGS.bucket, k))
         except Exception:
-            pass
+            continue
+        if deliv not in latest or r.get("attempt", 0) > latest[deliv].get("attempt", 0):
+            latest[deliv] = r
+    results = list(latest.values())
 
     metadata = llm_overall.read_metadata(s3, LLM_SETTINGS.bucket, deliverable_prefix)
     expected = llm_overall.expected_deliverables_for_day(metadata, day_name)
@@ -218,6 +232,19 @@ def _refresh_candidate_overall(s3, any_prefix):
 
 # ── message handling ───────────────────────────────────────────────────────────
 
+def _attempt_number(s3, deliverable_prefix) -> int:
+    """Attempt = number of existing result files in the folder + 1.
+    Counts tagged and untagged results (each prior attempt left one)."""
+    n = 0
+    for k in llm_s3.list_prefix(s3, LLM_SETTINGS.bucket, deliverable_prefix):
+        rel = k[len(deliverable_prefix):]
+        if "/" in rel:
+            continue
+        if _is_result_name(rel):
+            n += 1
+    return n + 1
+
+
 def _handle(s3, client, body: dict):
     kind = body.get("kind", "transcript")
     key = body["key"]
@@ -229,7 +256,20 @@ def _handle(s3, client, body: dict):
         print(f"[SKIP] combined-input folder, handled by sibling: {deliverable_name}")
         return
 
+    # tagged files are earlier attempts — never re-process them
+    fname = key.rsplit("/", 1)[-1]
+    if LLM_SETTINGS.pass_marker in fname or LLM_SETTINGS.fail_marker in fname:
+        print(f"[SKIP] already-tagged file: {fname}")
+        return
+
+    # the deliverable-result id rides the filename (video stem → transcript stem)
+    if kind == "transcript":
+        result_id = fname[:-len(LLM_SETTINGS.transcript_suffix)]
+    else:
+        result_id = Path(fname).stem
+
     transcript_key = key if kind == "transcript" else None
+    attempt = _attempt_number(s3, deliverable_prefix)
 
     # for image/text-only deliverables there is no transcript; still score
     result = _gather_and_score(
@@ -241,12 +281,35 @@ def _handle(s3, client, body: dict):
     if result is None:
         return
 
-    base = deliverable_name  # result file named after the deliverable folder
-    result_key = deliverable_prefix + base + LLM_SETTINGS.result_suffix
+    result["deliverableResultId"] = result_id
+    result["attempt"] = attempt
+    result["video"] = result_id
+
+    # result file named by deliverable + id (unique per attempt → no overwrite)
+    result_key = f"{deliverable_prefix}{deliverable_name}_{result_id}{LLM_SETTINGS.result_suffix}"
     s3.put_object(Bucket=LLM_SETTINGS.bucket, Key=result_key,
                   Body=json.dumps(result, indent=2).encode("utf-8"),
                   ContentType="application/json")
-    print(f"[DONE] {result_key} → {result.get('result')} {result.get('score')}")
+    print(f"[DONE] {result_key} → {result.get('result')} {result.get('score')} (attempt {attempt})")
+
+    # tag every untagged file in this folder (video, transcript, result, ...) with the status
+    marker = LLM_SETTINGS.pass_marker if result.get("result") == "PASS" else LLM_SETTINGS.fail_marker
+    tagged = llm_s3.tag_folder_files(
+        s3, LLM_SETTINGS.bucket, deliverable_prefix, marker,
+        pass_marker=LLM_SETTINGS.pass_marker, fail_marker=LLM_SETTINGS.fail_marker,
+    )
+    print(f"[TAG] {deliverable_name} → {marker} ({tagged} files)")
+
+    # send result back to Salesforce (no-op if SF disabled; never raises)
+    salesforce.notify(LLM_SETTINGS, {
+        "deliverableResultId": result_id,
+        "result": result.get("result"),
+        "score": result.get("score"),
+        "attempt": attempt,
+        "reasoning": result.get("reasoning", ""),
+        "positives": result.get("positives", []),
+        "negatives": result.get("negatives", []),
+    })
 
     with _lock:
         _maybe_write_overall(s3, deliverable_prefix)

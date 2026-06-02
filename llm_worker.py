@@ -285,20 +285,28 @@ def _handle(s3, client, body: dict):
     result["attempt"] = attempt
     result["video"] = result_id
 
-    # result file named by deliverable + id (unique per attempt → no overwrite)
-    result_key = f"{deliverable_prefix}{deliverable_name}_{result_id}{LLM_SETTINGS.result_suffix}"
+    marker = LLM_SETTINGS.pass_marker if result.get("result") == "PASS" else LLM_SETTINGS.fail_marker
+
+    # write the result file ALREADY labeled — one file, no untagged duplicate
+    result_key = (f"{deliverable_prefix}{deliverable_name}_{result_id}"
+                  f"{LLM_SETTINGS.result_suffix}{marker}")
     s3.put_object(Bucket=LLM_SETTINGS.bucket, Key=result_key,
                   Body=json.dumps(result, indent=2).encode("utf-8"),
                   ContentType="application/json")
     print(f"[DONE] {result_key} → {result.get('result')} {result.get('score')} (attempt {attempt})")
 
-    # tag every untagged file in this folder (video, transcript, result, ...) with the status
-    marker = LLM_SETTINGS.pass_marker if result.get("result") == "PASS" else LLM_SETTINGS.fail_marker
-    tagged = llm_s3.tag_folder_files(
-        s3, LLM_SETTINGS.bucket, deliverable_prefix, marker,
-        pass_marker=LLM_SETTINGS.pass_marker, fail_marker=LLM_SETTINGS.fail_marker,
-    )
-    print(f"[TAG] {deliverable_name} → {marker} ({tagged} files)")
+    # label the remaining files (transcript, video, image, ...) with the same status.
+    # the result file is already labeled above, so tag_folder_files skips it.
+    # NOTE: renaming is S3 copy+delete — the EC2 role needs s3:DeleteObject or the
+    # originals stay behind as duplicates.
+    try:
+        tagged = llm_s3.tag_folder_files(
+            s3, LLM_SETTINGS.bucket, deliverable_prefix, marker,
+            pass_marker=LLM_SETTINGS.pass_marker, fail_marker=LLM_SETTINGS.fail_marker,
+        )
+        print(f"[TAG] {deliverable_name} → {marker} ({tagged} files)")
+    except Exception as exc:
+        print(f"[TAG-ERROR] {deliverable_name}: {exc}")
 
     # send result back to Salesforce (no-op if SF disabled; never raises)
     salesforce.notify(LLM_SETTINGS, {

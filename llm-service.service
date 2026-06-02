@@ -1,0 +1,16 @@
+[Unit]
+Description=Candidate LLM scoring worker (SQS + OpenAI)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/home/ec2-user/candidate-analysis
+EnvironmentFile=/home/ec2-user/candidate-analysis/.env
+ExecStart=/home/ec2-user/candidate-analysis/venv/bin/python /home/ec2-user/candidate-analysis/llm_worker.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

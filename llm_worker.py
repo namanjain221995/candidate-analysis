@@ -1,0 +1,298 @@
+"""LLM worker (S3 + SQS) — full pipeline.
+
+Triggers (each is one SQS message produced by the LLM trigger Lambda):
+  { "bucket", "key", "kind": "transcript" }  ← a *_transcripts.txt was written
+  { "bucket", "key", "kind": "image" }       ← a .png/.jpg landed in an image-only deliverable
+  { "bucket", "key", "kind": "text" }        ← a .txt landed (non-transcript), e.g. JD text
+
+For each, the worker:
+  1. resolves the deliverable folder + name
+  2. skips folders that are "combined inputs" (their content is pulled by a sibling)
+  3. matches the deliverable → prompt + extras
+  4. gathers inputs: transcript / resume / reference PDF / sibling image / sibling text
+  5. calls OpenAI → JSON result → writes <name>_result.json in the deliverable folder
+  6. after writing, checks if the day is complete → writes Day overall → then candidate overall
+"""
+
+import json
+import signal
+import threading
+import time
+from pathlib import Path
+
+import boto3
+import requests
+
+from llm_config import LLM_SETTINGS, match_rule, is_combined_input_only
+import llm_processor
+import llm_s3
+import llm_overall
+
+_stop = threading.Event()
+_lock = threading.Lock()   # serialize overall-writing to avoid races
+
+
+# ── input gathering ───────────────────────────────────────────────────────────
+
+def _gather_and_score(s3, client, *, deliverable_prefix, deliverable_name, transcript_key=None):
+    rule = match_rule(deliverable_name)
+    if not rule:
+        print(f"[SKIP] no rule: {deliverable_name}")
+        return None
+    prompt_file, extras = rule
+
+    transcript_text = None
+    if transcript_key:
+        transcript_text = llm_s3.read_text(LLM_SETTINGS.bucket, transcript_key) \
+            if False else llm_s3.read_text(s3, LLM_SETTINGS.bucket, transcript_key)
+        if not transcript_text.strip():
+            print(f"[SKIP] empty transcript: {transcript_key}")
+            return None
+
+    ts_prefix = llm_s3.training_steps_prefix(deliverable_prefix)
+    day_prefix = llm_s3.parent_prefix(deliverable_prefix)
+
+    resume_text = reference_pdf_text = extra_text = None
+    image_urls = []
+
+    for extra in extras:
+        if extra == "resume":
+            rk = llm_s3.find_resume_pdf(s3, LLM_SETTINGS.bucket, ts_prefix)
+            if rk:
+                tmp = Path("/tmp") / Path(rk).name
+                llm_s3.download(s3, LLM_SETTINGS.bucket, rk, tmp)
+                resume_text = llm_processor.extract_pdf_text(tmp)
+                tmp.unlink(missing_ok=True)
+            else:
+                print(f"[WARN] no resume under {ts_prefix}resume pdf/")
+
+        elif extra.startswith("pdf:"):
+            pdf_path = Path(LLM_SETTINGS.pdf_dir) / extra.split(":", 1)[1]
+            if pdf_path.exists():
+                reference_pdf_text = llm_processor.extract_pdf_text(pdf_path)
+            else:
+                print(f"[WARN] reference PDF missing: {pdf_path}")
+
+        elif extra == "sibling_image":
+            sib = _find_sibling(s3, day_prefix, deliverable_name, want="image")
+            if sib:
+                img = llm_s3.find_first_image(s3, LLM_SETTINGS.bucket, sib)
+                if img:
+                    tmp = Path("/tmp") / Path(img).name
+                    llm_s3.download(s3, LLM_SETTINGS.bucket, img, tmp)
+                    image_urls.append(llm_processor.image_to_data_url(tmp))
+                    tmp.unlink(missing_ok=True)
+
+        elif extra == "sibling_text":
+            sib = _find_sibling(s3, day_prefix, deliverable_name, want="text")
+            if sib:
+                txt = llm_s3.find_first_text(
+                    s3, LLM_SETTINGS.bucket, sib,
+                    exclude_suffixes=(LLM_SETTINGS.transcript_suffix.lower(),),
+                )
+                if txt:
+                    extra_text = llm_s3.read_text(s3, LLM_SETTINGS.bucket, txt)
+
+    system_prompt = llm_processor.load_prompt(LLM_SETTINGS, prompt_file)
+
+    print(f"[LLM] scoring {deliverable_name} ({prompt_file})"
+          f"{' +image' if image_urls else ''}{' +jdtext' if extra_text else ''}")
+
+    result = llm_processor.evaluate(
+        LLM_SETTINGS, client,
+        system_prompt=system_prompt,
+        transcript_text=transcript_text,
+        resume_text=resume_text,
+        reference_pdf_text=reference_pdf_text,
+        extra_text=extra_text,
+        image_data_urls=image_urls or None,
+    )
+    result["deliverable"] = deliverable_name
+    return result
+
+
+def _find_sibling(s3, day_prefix, deliverable_name, *, want):
+    """Find the sibling folder (image/text companion) in the same day.
+
+    Pairs by the shared base + number. e.g.
+      'System Design Problem 1 Video' → look for '...Problem 1 Image'
+      'Job Description Alignment  1 video' → '...1 text' or '...1 Image'
+      'Team Structure Video' → 'Team Structure Diagram'
+    """
+    name_l = deliverable_name.lower()
+    # build a "stem" to match siblings: strip the trailing role word + id
+    siblings = set()
+    for k in llm_s3.list_prefix(s3, LLM_SETTINGS.bucket, day_prefix):
+        rel = k[len(day_prefix):]
+        if "/" in rel:
+            siblings.add(rel.split("/", 1)[0])  # immediate child folder name
+
+    def base_tokens(n):
+        n = n.lower()
+        for w in ("video", "image", "diagram", "text", "recording"):
+            n = n.replace(w, "")
+        # drop trailing (id)
+        if "(" in n:
+            n = n[: n.find("(")]
+        return [t for t in n.replace("-", " ").split() if t]
+
+    target = set(base_tokens(name_l))
+    best = None
+    for sib in siblings:
+        sib_l = sib.lower()
+        if sib_l == name_l:
+            continue
+        if want == "image" and not any(w in sib_l for w in ("image", "diagram")):
+            continue
+        if want == "text" and "text" not in sib_l:
+            continue
+        if set(base_tokens(sib_l)) & target:
+            best = day_prefix + sib + "/"
+            break
+    return best
+
+
+# ── overall coordination ───────────────────────────────────────────────────────
+
+def _maybe_write_overall(s3, deliverable_prefix):
+    """After a per-deliverable result is written, check if the day is complete;
+    if so, write the day overall, then refresh the candidate overall."""
+    day_prefix = llm_s3.parent_prefix(deliverable_prefix)
+    day_name = llm_s3.deliverable_name_from_prefix(day_prefix)
+
+    # collect all result.json under this day
+    result_keys = [k for k in llm_s3.list_prefix(s3, LLM_SETTINGS.bucket, day_prefix)
+                   if k.endswith(LLM_SETTINGS.result_suffix) and "OVERALL" not in k]
+    results = []
+    for k in result_keys:
+        try:
+            results.append(json.loads(llm_s3.read_text(s3, LLM_SETTINGS.bucket, k)))
+        except Exception:
+            pass
+
+    metadata = llm_overall.read_metadata(s3, LLM_SETTINGS.bucket, deliverable_prefix)
+    expected = llm_overall.expected_deliverables_for_day(metadata, day_name)
+
+    if expected is not None and len(results) < len(expected):
+        print(f"[OVERALL] day '{day_name}' not complete ({len(results)}/{len(expected)})")
+        return
+
+    day_doc = llm_overall.combine(results, label_fields={
+        "candidate": (deliverable_prefix.split("/", 1)[0]),
+        "day": day_name,
+    })
+    day_key = day_prefix + "DayOVERALL" + LLM_SETTINGS.result_suffix
+    s3.put_object(Bucket=LLM_SETTINGS.bucket, Key=day_key,
+                  Body=json.dumps(day_doc, indent=2).encode("utf-8"),
+                  ContentType="application/json")
+    print(f"[OVERALL] wrote {day_key} → {day_doc['result']} {day_doc['overallScore']}")
+
+    _refresh_candidate_overall(s3, deliverable_prefix)
+
+
+def _refresh_candidate_overall(s3, any_prefix):
+    root = any_prefix.split("/", 1)[0] + "/"
+    # find all DayOVERALL files
+    day_overalls = [k for k in llm_s3.list_prefix(s3, LLM_SETTINGS.bucket, root)
+                    if k.endswith("DayOVERALL" + LLM_SETTINGS.result_suffix)]
+    docs = []
+    for k in day_overalls:
+        try:
+            d = json.loads(llm_s3.read_text(s3, LLM_SETTINGS.bucket, k))
+            docs.append({"deliverable": d.get("day"), "score": d.get("overallScore"),
+                         "result": d.get("result"),
+                         "positives": d.get("positives", []), "negatives": d.get("negatives", [])})
+        except Exception:
+            pass
+    if not docs:
+        return
+    cand_doc = llm_overall.combine(docs, label_fields={"candidate": root.rstrip("/")})
+    cand_doc["days"] = cand_doc.pop("deliverables")
+    key = root + "CANDIDATE_OVERALL" + LLM_SETTINGS.result_suffix
+    s3.put_object(Bucket=LLM_SETTINGS.bucket, Key=key,
+                  Body=json.dumps(cand_doc, indent=2).encode("utf-8"),
+                  ContentType="application/json")
+    print(f"[OVERALL] wrote {key} → {cand_doc['result']} {cand_doc['overallScore']}")
+
+
+# ── message handling ───────────────────────────────────────────────────────────
+
+def _handle(s3, client, body: dict):
+    kind = body.get("kind", "transcript")
+    key = body["key"]
+    deliverable_prefix = llm_s3.prefix_of(key)
+    deliverable_name = llm_s3.deliverable_name_from_prefix(deliverable_prefix)
+
+    # combined-input folders (diagram/text companions) are not scored directly
+    if is_combined_input_only(deliverable_name):
+        print(f"[SKIP] combined-input folder, handled by sibling: {deliverable_name}")
+        return
+
+    transcript_key = key if kind == "transcript" else None
+
+    # for image/text-only deliverables there is no transcript; still score
+    result = _gather_and_score(
+        s3, client,
+        deliverable_prefix=deliverable_prefix,
+        deliverable_name=deliverable_name,
+        transcript_key=transcript_key,
+    )
+    if result is None:
+        return
+
+    base = deliverable_name  # result file named after the deliverable folder
+    result_key = deliverable_prefix + base + LLM_SETTINGS.result_suffix
+    s3.put_object(Bucket=LLM_SETTINGS.bucket, Key=result_key,
+                  Body=json.dumps(result, indent=2).encode("utf-8"),
+                  ContentType="application/json")
+    print(f"[DONE] {result_key} → {result.get('result')} {result.get('score')}")
+
+    with _lock:
+        _maybe_write_overall(s3, deliverable_prefix)
+
+
+def _worker(n):
+    sqs = boto3.client("sqs", region_name=LLM_SETTINGS.aws_region)
+    s3 = llm_s3.build_s3(LLM_SETTINGS)
+    client = requests.Session()
+    client.headers.update({"Authorization": f"Bearer {LLM_SETTINGS.openai_api_key}"})
+    print(f"[LLM-WORKER {n}] started")
+
+    while not _stop.is_set():
+        try:
+            resp = sqs.receive_message(
+                QueueUrl=LLM_SETTINGS.llm_queue_url, MaxNumberOfMessages=1,
+                WaitTimeSeconds=LLM_SETTINGS.sqs_wait_seconds,
+                VisibilityTimeout=LLM_SETTINGS.sqs_visibility_timeout)
+        except Exception as exc:
+            print(f"[LLM-WORKER {n}][SQS-ERROR] {exc}")
+            time.sleep(LLM_SETTINGS.failure_sleep_seconds); continue
+
+        msgs = resp.get("Messages", [])
+        if not msgs:
+            continue
+        msg = msgs[0]; receipt = msg["ReceiptHandle"]
+        try:
+            _handle(s3, client, json.loads(msg["Body"]))
+            sqs.delete_message(QueueUrl=LLM_SETTINGS.llm_queue_url, ReceiptHandle=receipt)
+        except Exception as exc:
+            print(f"[LLM-WORKER {n}][ERROR] {exc}  (will retry via SQS)")
+            time.sleep(LLM_SETTINGS.failure_sleep_seconds)
+
+
+def main():
+    LLM_SETTINGS.validate()
+    signal.signal(signal.SIGINT, lambda *a: _stop.set())
+    signal.signal(signal.SIGTERM, lambda *a: _stop.set())
+    print(f"[LLM-MAIN] bucket={LLM_SETTINGS.bucket} queue={LLM_SETTINGS.llm_queue_url}")
+    print(f"[LLM-MAIN] threads={LLM_SETTINGS.worker_threads} model={LLM_SETTINGS.openai_model}")
+    threads = [threading.Thread(target=_worker, args=(i + 1,), daemon=True)
+               for i in range(LLM_SETTINGS.worker_threads)]
+    for t in threads:
+        t.start()
+    while not _stop.is_set():
+        time.sleep(1)
+
+
+if __name__ == "__main__":
+    main()

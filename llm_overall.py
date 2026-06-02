@@ -35,7 +35,10 @@ def read_metadata(s3, bucket, any_key) -> Optional[dict]:
 def expected_deliverables_for_day(metadata: dict, day_folder_name: str):
     """From metadata.json, return the set of expected deliverable names for the
     day whose folder is `day_folder_name` (e.g. 'Day 1 - Foundations(a0z...)').
-    Combined image/text inputs are excluded — only the scored ones count."""
+
+    Image and JD-text deliverables are now scored STANDALONE (each produces its
+    own _result.json), so they ARE counted here — every deliverable in metadata
+    is expected, matching one result file per deliverable folder."""
     if not metadata:
         return None
     # match the day by its title/id appearing in the folder name
@@ -45,13 +48,7 @@ def expected_deliverables_for_day(metadata: dict, day_folder_name: str):
                 title = (day.get("title") or "")
                 day_id = (day.get("day Id") or "")
                 if (title and title in day_folder_name) or (day_id and day_id in day_folder_name):
-                    names = []
-                    for d in day.get("deliverables", []):
-                        dn = (d.get("name") or "").lower()
-                        # skip combined-input-only deliverables (image/text companions)
-                        if "diagram" in dn or dn.endswith("text") or dn.endswith("image"):
-                            continue
-                        names.append(d.get("name"))
+                    names = [d.get("name") for d in day.get("deliverables", [])]
                     return [n for n in names if n]
     return None
 

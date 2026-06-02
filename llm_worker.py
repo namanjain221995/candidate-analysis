@@ -94,6 +94,37 @@ def _gather_and_score(s3, client, *, deliverable_prefix, deliverable_name, trans
                 if txt:
                     extra_text = llm_s3.read_text(s3, LLM_SETTINGS.bucket, txt)
 
+        elif extra == "own_image":
+            # standalone image deliverable: score the image in THIS folder
+            img = llm_s3.find_first_image(s3, LLM_SETTINGS.bucket, deliverable_prefix)
+            if img:
+                tmp = Path("/tmp") / Path(img).name
+                llm_s3.download(s3, LLM_SETTINGS.bucket, img, tmp)
+                image_urls.append(llm_processor.image_to_data_url(tmp))
+                tmp.unlink(missing_ok=True)
+            else:
+                print(f"[WARN] no image under {deliverable_prefix}")
+
+        elif extra == "own_text":
+            # standalone text deliverable (e.g. JD text): score this folder's text
+            txt = llm_s3.find_first_text(
+                s3, LLM_SETTINGS.bucket, deliverable_prefix,
+                exclude_suffixes=(LLM_SETTINGS.transcript_suffix.lower(),),
+            )
+            if txt:
+                extra_text = llm_s3.read_text(s3, LLM_SETTINGS.bucket, txt)
+            else:
+                print(f"[WARN] no text under {deliverable_prefix}")
+
+    # standalone image/text deliverables must have their own content to score;
+    # without it the model would have nothing to evaluate.
+    if "own_image" in extras and not image_urls and not transcript_text:
+        print(f"[SKIP] no image to score: {deliverable_name}")
+        return None
+    if "own_text" in extras and not extra_text and not transcript_text and not image_urls:
+        print(f"[SKIP] no text to score: {deliverable_name}")
+        return None
+
     system_prompt = llm_processor.load_prompt(LLM_SETTINGS, prompt_file)
 
     print(f"[LLM] scoring {deliverable_name} ({prompt_file})"

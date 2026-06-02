@@ -86,7 +86,12 @@ LLM_SETTINGS = LLMSettings()
 #   "pdf:NAME"        → attach a reference PDF shipped in the local pdf/ folder
 #   "sibling_image"   → pull in the diagram image from the matching sibling folder
 #   "sibling_text"    → pull in the text from the matching sibling folder
+#   "own_image"       → score the image(s) in THIS deliverable's own folder
+#   "own_text"        → score the text in THIS deliverable's own folder
 #
+# Rule ordering note: substring match, first match wins, so the standalone
+# image/text rules (most specific, e.g. "team structure diagram") MUST come
+# before the broader video rules (e.g. "team structure video" / "system design").
 DELIVERABLE_RULES = [
     # Day 1
     ("hr questions",                  "mock-prompt.txt",             ["pdf:31-Questions.pdf", "resume"]),
@@ -98,6 +103,9 @@ DELIVERABLE_RULES = [
     # Day 3
     ("introduction and career flow",  "intro-prompt.txt",            ["resume"]),
     ("tools and system explanation",  "Tools-Technology-prompt.txt", ["resume"]),
+    # Team structure: the diagram is now scored standalone (own image) AND the
+    # video still references the sibling diagram. Two separate results.
+    ("team structure diagram",        "Tools-Technology-prompt.txt", ["resume", "own_image"]),
     ("team structure video",          "Tools-Technology-prompt.txt", ["resume", "sibling_image"]),
     ("resume-based mock interview",   "CV-prompt.txt",               ["resume"]),
 
@@ -106,26 +114,31 @@ DELIVERABLE_RULES = [
     ("hiring manager persona",        "persona.txt",                 ["resume"]),
     ("architect persona",             "persona.txt",                 ["resume"]),
 
-    # Day 5  (JD video pulls in its sibling text + image → one result)
+    # Day 5  JD: the text and image folders are now scored standalone, AND the
+    # JD video still references its sibling text + image. Separate results.
+    ("job description alignment  1 text",  "JD-prompt.txt",          ["resume", "own_text"]),
+    ("job description alignment 1 text",   "JD-prompt.txt",          ["resume", "own_text"]),
+    ("job description alignment  1 image", "JD-prompt.txt",          ["resume", "own_image"]),
+    ("job description alignment 1 image",  "JD-prompt.txt",          ["resume", "own_image"]),
     ("job description alignment",     "JD-prompt.txt",               ["resume", "sibling_text", "sibling_image"]),
     ("small talk",                    "smalltalk.txt",               ["resume"]),
 
-    # Day 6  (system design video pulls in its matching diagram image → one result)
+    # Day 6  System design: each problem image is scored standalone (own image),
+    # AND the system design video still references its matching diagram image.
+    ("system design problem 1 image", "System-design.txt",           ["resume", "own_image"]),
+    ("system design problem 2 image", "System-design.txt",           ["resume", "own_image"]),
     ("system design",                 "System-design.txt",           ["resume", "sibling_image"]),
 ]
 
-# Folders that are INPUTS to a combined deliverable, not scored on their own.
-# If a folder name contains any of these, the worker skips scoring it directly
-# (its content is pulled in by the matching video deliverable instead).
-COMBINED_INPUT_MARKERS = [
-    "team structure diagram",
-    "job description alignment  1 text",
-    "job description alignment 1 text",
-    "job description alignment  1 image",
-    "job description alignment 1 image",
-    "system design problem 1 image",
-    "system design problem 2 image",
-]
+# Folders that are INPUTS to a combined deliverable and are NOT scored on their own.
+#
+# Product decision: image-only and JD text-only deliverables are now scored
+# STANDALONE (each gets its own _result.json), so they are no longer treated as
+# combined-input-only. The companion video deliverables still pull the sibling
+# image/text for their own result, so a video and its image/text folder produce
+# TWO separate results — each counted once in the day overall (the overall groups
+# by deliverable subfolder, so distinct folders never double-count).
+COMBINED_INPUT_MARKERS = []
 
 
 def match_rule(deliverable_folder_name: str):

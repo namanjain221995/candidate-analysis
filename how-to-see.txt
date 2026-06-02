@@ -1,0 +1,4 @@
+journalctl -u transcript-service -f
+
+# LLM worker - live logs
+journalctl -u llm-service -f

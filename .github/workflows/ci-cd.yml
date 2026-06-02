@@ -1,0 +1,79 @@
+name: CI-CD
+
+# Runs on every push to main: first CI checks, then (only if they pass) deploy to EC2.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ────────────────────────────────────────────────────────────
+  # CI — fast checks. Runs on pushes AND pull requests.
+  # ────────────────────────────────────────────────────────────
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-llm.txt
+          pip install pyflakes
+
+      - name: Syntax check (compile all Python)
+        run: python -m compileall -q .
+
+      - name: Lint (pyflakes — catches undefined names, unused imports)
+        run: pyflakes . || true   # report but don't fail the build on style nits
+
+      - name: Import smoke test
+        env:
+          # dummy values so config modules that read env don't exit
+          TRANSCRIPT_QUEUE_URL: "https://sqs.us-east-1.amazonaws.com/000000000000/transcript-jobs"
+          LLM_QUEUE_URL: "https://sqs.us-east-1.amazonaws.com/000000000000/llm-jobs"
+          OPENAI_API_KEY: "sk-ci-dummy"
+          AWS_DEFAULT_REGION: "us-east-1"
+        run: |
+          python -c "import config, s3_store, transcriber"
+          python -c "import llm_config, llm_s3, llm_processor, llm_overall"
+          echo "imports OK"
+
+  # ────────────────────────────────────────────────────────────
+  # CD — deploy to EC2. Only on push to main, only if CI passed.
+  # ────────────────────────────────────────────────────────────
+  deploy:
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            cd /home/ec2-user/candidate-analysis
+            echo "==> Pulling latest code"
+            git pull origin main
+            echo "==> Installing dependencies"
+            source venv/bin/activate
+            pip install -q -r requirements.txt
+            pip install -q -r requirements-llm.txt
+            echo "==> Restarting services"
+            sudo systemctl restart transcript-service
+            sudo systemctl restart llm-service
+            echo "==> Status"
+            sudo systemctl is-active transcript-service
+            sudo systemctl is-active llm-service
+            echo "==> Deploy complete"

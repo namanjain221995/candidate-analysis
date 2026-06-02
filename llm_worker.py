@@ -316,7 +316,10 @@ def _handle(s3, client, body: dict):
     result["attempt"] = attempt
     result["video"] = result_id
 
-    marker = LLM_SETTINGS.pass_marker if result.get("result") == "PASS" else LLM_SETTINGS.fail_marker
+    base_marker = LLM_SETTINGS.pass_marker if result.get("result") == "PASS" else LLM_SETTINGS.fail_marker
+    # label includes the attempt number, e.g. (Fail)(Attempt-1), (Pass)(Attempt-2).
+    # base marker stays a contiguous substring so is_tagged/skip detection still works.
+    marker = f"{base_marker}(Attempt-{attempt})"
 
     # write the result file ALREADY labeled — one file, no untagged duplicate
     result_key = (f"{deliverable_prefix}{deliverable_name}_{result_id}"

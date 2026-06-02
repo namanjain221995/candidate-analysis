@@ -55,20 +55,21 @@ class LLMSettings:
 
     failure_sleep_seconds: int = _int("FAILURE_SLEEP_SECONDS", 5)
 
-    # Salesforce callout (JWT bearer; credentials from AWS Secrets Manager).
-    sf_enabled:     bool = _bool("SF_ENABLED", False)
-    sf_secret_name: str  = _str("SF_SECRET_NAME", "sf/jwt/credentials")
-    sf_apex_path:   str  = _str("SF_APEX_PATH", "")  # e.g. /services/apexrest/deliverableResult
-    sf_audience:    str  = _str("SF_AUDIENCE", "https://login.salesforce.com")
-    sf_timeout:     int  = _int("SF_TIMEOUT", 30)
+    # Salesforce callout — direct POST of the result JSON (+ client credentials)
+    # to an Apex REST endpoint. Credentials come from env/.env, never committed.
+    sf_enabled:       bool = _bool("SF_ENABLED", False)
+    sf_endpoint:      str  = _str("SF_ENDPOINT")        # full Apex REST URL
+    sf_client_id:     str  = _str("SF_CLIENT_ID")       # connected-app consumer key
+    sf_client_secret: str  = _str("SF_CLIENT_SECRET")   # connected-app secret
+    sf_timeout:       int  = _int("SF_TIMEOUT", 30)
 
     def validate(self):
         missing = [k for k, v in {
             "LLM_QUEUE_URL": self.llm_queue_url,
             "OPENAI_API_KEY": self.openai_api_key,
         }.items() if not v]
-        if self.sf_enabled and not self.sf_apex_path:
-            missing.append("SF_APEX_PATH")
+        if self.sf_enabled and not self.sf_endpoint:
+            missing.append("SF_ENDPOINT")
         if missing:
             raise SystemExit(f"[CONFIG] missing required env vars: {', '.join(missing)}")
 

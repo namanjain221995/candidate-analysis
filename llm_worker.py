@@ -15,6 +15,7 @@ For each, the worker:
 """
 
 import json
+import re
 import signal
 import threading
 import time
@@ -31,6 +32,14 @@ import salesforce
 
 _stop = threading.Event()
 _lock = threading.Lock()   # serialize overall-writing to avoid races
+
+# Salesforce record id embedded in a folder name, e.g. "...Image(a12O10000071verIAA)" → a12...
+_SF_ID_RE = re.compile(r"\(([A-Za-z0-9]{15,18})\)")
+
+
+def _sf_id_from_name(name: str):
+    m = _SF_ID_RE.search(name or "")
+    return m.group(1) if m else None
 
 
 # ── input gathering ───────────────────────────────────────────────────────────
@@ -312,9 +321,12 @@ def _handle(s3, client, body: dict):
     if result is None:
         return
 
-    result["deliverableResultId"] = result_id
+    # the deliverable-result id is the Salesforce record id baked into the folder
+    # name (e.g. "...Image(a12O10000071verIAA)" → a12O10000071verIAA).
+    deliverable_result_id = _sf_id_from_name(deliverable_name) or result_id
+    result["deliverableResultId"] = deliverable_result_id
     result["attempt"] = attempt
-    result["video"] = result_id
+    result["video"] = result_id   # the uploaded source file stem
 
     base_marker = LLM_SETTINGS.pass_marker if result.get("result") == "PASS" else LLM_SETTINGS.fail_marker
     # label includes the attempt number, e.g. (Fail)(Attempt-1), (Pass)(Attempt-2).
@@ -342,16 +354,9 @@ def _handle(s3, client, body: dict):
     except Exception as exc:
         print(f"[TAG-ERROR] {deliverable_name}: {exc}")
 
-    # send result back to Salesforce (no-op if SF disabled; never raises)
-    salesforce.notify(LLM_SETTINGS, {
-        "deliverableResultId": result_id,
-        "result": result.get("result"),
-        "score": result.get("score"),
-        "attempt": attempt,
-        "reasoning": result.get("reasoning", ""),
-        "positives": result.get("positives", []),
-        "negatives": result.get("negatives", []),
-    })
+    # send the full result.json (which now includes deliverableResultId) to
+    # Salesforce (no-op if SF disabled; never raises)
+    salesforce.notify(LLM_SETTINGS, result)
 
     with _lock:
         _maybe_write_overall(s3, deliverable_prefix)

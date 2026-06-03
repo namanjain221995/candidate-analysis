@@ -358,8 +358,20 @@ def _handle(s3, client, body: dict):
         print(f"[TAG-ERROR] {deliverable_name}: {exc}")
 
     # send the full result.json (which now includes deliverableResultId) to
-    # Salesforce (no-op if SF disabled; never raises)
-    salesforce.notify(LLM_SETTINGS, result)
+    # Salesforce, then store the callout log next to the result in the same S3
+    # folder. notify() never raises and returns a log dict (request/response/
+    # status/success). The log is a plain .json, so neither trigger Lambda
+    # re-processes it.
+    sf_log = salesforce.notify(LLM_SETTINGS, result)
+    try:
+        log_key = (f"{deliverable_prefix}{deliverable_name}_{result_id}"
+                   f"_sf_log(Attempt-{attempt}).json")
+        s3.put_object(Bucket=LLM_SETTINGS.bucket, Key=log_key,
+                      Body=json.dumps(sf_log, indent=2, default=str).encode("utf-8"),
+                      ContentType="application/json")
+        print(f"[SF-LOG] wrote {log_key} (success={sf_log.get('success')})")
+    except Exception as exc:
+        print(f"[SF-LOG-ERROR] {deliverable_name}: {exc}")
 
     with _lock:
         _maybe_write_overall(s3, deliverable_prefix)

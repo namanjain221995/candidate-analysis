@@ -6,14 +6,19 @@ Step 1: POST {sf_login_url}/services/oauth2/token
         -> { access_token, instance_url, token_type: Bearer }
 Step 2: POST {instance_url}{sf_apex_path}
         Authorization: Bearer <access_token>
-        { "resultId": ..., "status": "Pass"/"Fail", "feedback": ..., "score": ... }
+        the FULL result.json produced by the LLM stage (score, result, reasoning,
+        positives, negatives, deliverable, deliverableResultId, attempt, video).
+        This matches what the Apex @RestResource expects (reads deliverableResultId
+        and result).
 
 Credentials/URL come from env (.env on the EC2) — never committed.
-notify() never raises (SF down must not kill analysis) and is a no-op when disabled.
+notify() never raises (SF down must not kill analysis); it returns a log dict
+describing the outcome (so the caller can store it next to the result in S3).
 """
 
 import threading
 import time
+from datetime import datetime, timezone
 
 import requests
 
@@ -51,30 +56,52 @@ def _clear_token():
         _cache["instance_url"] = None
 
 
-def notify(settings, result: dict) -> bool:
-    """POST the deliverable result to the Apex endpoint. Returns True on 2xx.
-    Never raises."""
-    if not settings.sf_enabled:
-        print("[SF] disabled (SF_ENABLED=false), skip")
-        return False
+def notify(settings, result: dict) -> dict:
+    """POST the FULL result.json to the Apex endpoint. Never raises.
 
-    payload = {
-        "resultId": result.get("deliverableResultId"),
-        "status": "Pass" if result.get("result") == "PASS" else "Fail",
-        "feedback": result.get("reasoning", ""),
-        "score": result.get("score"),
+    Returns a log dict describing the outcome (request sent, Salesforce response,
+    HTTP status, success flag, error) so the caller can persist it in S3 next to
+    the result.json."""
+    log = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "enabled": settings.sf_enabled,
+        "deliverableResultId": result.get("deliverableResultId"),
+        "endpoint": None,
+        "success": False,
+        "statusCode": None,
+        "attempts": 0,
+        "request": None,
+        "response": None,
+        "error": None,
     }
 
+    if not settings.sf_enabled:
+        print("[SF] disabled (SF_ENABLED=false), skip")
+        log["error"] = "SF_ENABLED=false"
+        return log
+
+    # send the FULL result.json exactly as produced by the LLM stage
+    payload = result
+    log["request"] = payload
+
     for attempt in range(3):
+        log["attempts"] = attempt + 1
         try:
             token, instance = _get_token(settings)
             url = instance + settings.sf_apex_path
+            log["endpoint"] = url
             r = requests.post(
                 url, json=payload,
                 headers={"Authorization": f"Bearer {token}",
                          "Content-Type": "application/json"},
                 timeout=settings.sf_timeout,
             )
+            log["statusCode"] = r.status_code
+            try:
+                log["response"] = r.json()
+            except Exception:
+                log["response"] = (r.text or "")[:1000]
+
             if r.status_code == 401:          # token stale → drop cache and retry
                 _clear_token()
                 continue
@@ -82,12 +109,17 @@ def notify(settings, result: dict) -> bool:
                 time.sleep(2 ** attempt)
                 continue
             if 200 <= r.status_code < 300:
-                print(f"[SF] sent {payload['resultId']} → {payload['status']}")
-                return True
+                log["success"] = True
+                print(f"[SF] sent {log['deliverableResultId']} → HTTP {r.status_code}")
+                return log
             print(f"[SF] HTTP {r.status_code}: {(r.text or '')[:300]}")
-            return False
+            log["error"] = f"HTTP {r.status_code}"
+            return log
         except Exception as exc:
             print(f"[SF] error: {exc}")
+            log["error"] = str(exc)
             time.sleep(2 ** attempt)
-    print(f"[SF] giving up after retries: {payload['resultId']}")
-    return False
+    print(f"[SF] giving up after retries: {log['deliverableResultId']}")
+    if not log["error"]:
+        log["error"] = "exhausted retries"
+    return log

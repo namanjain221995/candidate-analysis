@@ -321,9 +321,12 @@ def _handle(s3, client, body: dict):
     if result is None:
         return
 
-    # the deliverable-result id is the Salesforce record id baked into the folder
-    # name (e.g. "...Image(a12O10000071verIAA)" → a12O10000071verIAA).
-    deliverable_result_id = _sf_id_from_name(deliverable_name) or result_id
+    # the deliverable-result id is the Salesforce record id (prefix a1U...) baked
+    # into the uploaded FILE name, e.g. "HR Questions Recording-(a1UO1000002Rd0vMAC).mp4".
+    # Fall back to the folder id, then the raw stem, if no parenthesised id is found.
+    deliverable_result_id = (_sf_id_from_name(result_id)
+                             or _sf_id_from_name(deliverable_name)
+                             or result_id)
     result["deliverableResultId"] = deliverable_result_id
     result["attempt"] = attempt
     result["video"] = result_id   # the uploaded source file stem

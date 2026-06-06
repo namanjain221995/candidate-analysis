@@ -39,7 +39,12 @@ class LLMSettings:
     worker_threads:         int = _int("LLM_WORKER_THREADS", 4)
 
     openai_api_key: str = _str("OPENAI_API_KEY")
-    openai_model:   str = _str("OPENAI_LLM_MODEL", "gpt-4o")
+    # gpt-5.x are reasoning models: the worker automatically sends
+    # reasoning_effort instead of temperature for them (see llm_processor).
+    openai_model:   str = _str("OPENAI_LLM_MODEL", "gpt-5.5")
+    # none | low | medium | high | xhigh. "none" = fastest (Instant-style),
+    # "low" adds light reasoning for the rubric math. Default: low.
+    openai_reasoning_effort: str = _str("OPENAI_REASONING_EFFORT", "low")
 
     transcript_suffix: str = _str("TRANSCRIPT_SUFFIX", "_transcripts.txt")
     result_suffix:     str = _str("LLM_RESULT_SUFFIX", "_result.json")

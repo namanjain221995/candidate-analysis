@@ -112,13 +112,25 @@ def evaluate(
 
     payload = {
         "model": settings.openai_model,
-        "temperature": 0,
         "response_format": {"type": "json_object"},
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": content},
         ],
     }
+
+    # GPT-5.x / o-series reasoning models reject `temperature` (HTTP 400:
+    # only the default 1 is supported) and take `reasoning_effort` instead.
+    # The "-chat" variants (e.g. gpt-5.2-chat-latest) are non-reasoning and
+    # keep accepting temperature, as do gpt-4o and older models.
+    model_l = settings.openai_model.lower()
+    is_reasoning = model_l.startswith(("gpt-5", "o1", "o3", "o4")) and "chat" not in model_l
+    if is_reasoning:
+        effort = (settings.openai_reasoning_effort or "").strip().lower()
+        if effort:
+            payload["reasoning_effort"] = effort
+    else:
+        payload["temperature"] = 0
 
     last_err = None
     for attempt in range(_MAX_ATTEMPTS):

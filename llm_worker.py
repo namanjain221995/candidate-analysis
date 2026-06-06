@@ -53,11 +53,24 @@ def _gather_and_score(s3, client, *, deliverable_prefix, deliverable_name, trans
 
     transcript_text = None
     if transcript_key:
-        transcript_text = llm_s3.read_text(LLM_SETTINGS.bucket, transcript_key) \
-            if False else llm_s3.read_text(s3, LLM_SETTINGS.bucket, transcript_key)
-        if not transcript_text.strip():
-            print(f"[SKIP] empty transcript: {transcript_key}")
-            return None
+        transcript_text = llm_s3.read_text(s3, LLM_SETTINGS.bucket, transcript_key)
+        # Muted/empty video: Whisper produced no usable speech. Don't waste an
+        # LLM call — return a deterministic 0/FAIL so the candidate gets clear
+        # feedback through the normal result → Salesforce flow.
+        if len((transcript_text or "").strip()) < 20:
+            print(f"[EMPTY-TRANSCRIPT] no usable speech, scoring 0/FAIL: {transcript_key}")
+            return {
+                "score": 0,
+                "result": "FAIL",
+                "reasoning": "No usable speech was found in the submitted video — the recording appears muted or empty.",
+                "positives": [],
+                "negatives": [
+                    "No speech detected in your video — the recording appears muted or empty | "
+                    "Proof: the transcript generated from your video contains no words | "
+                    "Suggestion: check that your microphone is on and not muted, re-record the video, "
+                    "play it back to confirm the audio is clearly audible, then upload it again."
+                ],
+            }
 
     ts_prefix = llm_s3.training_steps_prefix(deliverable_prefix)
     day_prefix = llm_s3.parent_prefix(deliverable_prefix)
@@ -142,6 +155,7 @@ def _gather_and_score(s3, client, *, deliverable_prefix, deliverable_name, trans
     result = llm_processor.evaluate(
         LLM_SETTINGS, client,
         system_prompt=system_prompt,
+        deliverable_name=deliverable_name,
         transcript_text=transcript_text,
         resume_text=resume_text,
         reference_pdf_text=reference_pdf_text,
@@ -175,9 +189,11 @@ def _find_sibling(s3, day_prefix, deliverable_name, *, want):
         # drop trailing (id)
         if "(" in n:
             n = n[: n.find("(")]
-        return [t for t in n.replace("-", " ").split() if t]
+        return [t for t in n.replace("-", " ").replace("_", " ").split() if t]
 
-    target = set(base_tokens(name_l))
+    target = base_tokens(name_l)
+    t_words = {t for t in target if not t.isdigit()}
+    t_nums = {t for t in target if t.isdigit()}
     best = None
     for sib in siblings:
         sib_l = sib.lower()
@@ -187,7 +203,13 @@ def _find_sibling(s3, day_prefix, deliverable_name, *, want):
             continue
         if want == "text" and "text" not in sib_l:
             continue
-        if set(base_tokens(sib_l)) & target:
+        s_tokens = base_tokens(sib_l)
+        s_words = {t for t in s_tokens if not t.isdigit()}
+        s_nums = {t for t in s_tokens if t.isdigit()}
+        # Words must overlap AND the deliverable numbers must match exactly, so
+        # 'JD Alignment 1 video' pairs only with '_1 text' / '_1 Image' (never
+        # set 2), and 'System Design Problem 1' never pulls Problem 2's diagram.
+        if (s_words & t_words) and s_nums == t_nums:
             best = day_prefix + sib + "/"
             break
     return best
@@ -300,6 +322,19 @@ def _handle(s3, client, body: dict):
     fname = key.rsplit("/", 1)[-1]
     if LLM_SETTINGS.pass_marker in fname or LLM_SETTINGS.fail_marker in fname:
         print(f"[SKIP] already-tagged file: {fname}")
+        return
+
+    # Images/texts landing in a folder that is NOT a dedicated image/text
+    # deliverable are combined INPUTS (e.g. the Day 6 diagram uploaded inside
+    # the 'System Design Problem N' folder next to the video). They feed the
+    # video's evaluation via own_image/own_text and must not produce their own
+    # result — that would corrupt attempt numbering and the day overall.
+    name_l = deliverable_name.lower()
+    if kind == "image" and not any(w in name_l for w in ("image", "diagram")):
+        print(f"[SKIP] image is combined input only (folder is not an image deliverable): {key}")
+        return
+    if kind == "text" and "text" not in name_l:
+        print(f"[SKIP] text is combined input only (folder is not a text deliverable): {key}")
         return
 
     # the deliverable-result id rides the filename (video stem → transcript stem)

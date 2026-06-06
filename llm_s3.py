@@ -105,27 +105,47 @@ def find_resume_pdf(s3, bucket, ts_prefix) -> Optional[str]:
     return None
 
 
+def _untagged_base(key: str, pass_marker="(Pass)", fail_marker="(Fail)") -> str:
+    """Key with any '(Pass)…'/'(Fail)…' tag suffix removed (for extension checks)."""
+    for m in (pass_marker, fail_marker):
+        i = key.find(m)
+        if i != -1:
+            return key[:i]
+    return key
+
+
 def find_first_image(s3, bucket, folder_prefix, *, pass_marker="(Pass)", fail_marker="(Fail)") -> Optional[str]:
-    """Newest untagged image in the folder (ignores pass/fail-tagged earlier attempts)."""
-    cands = []
+    """Newest image in the folder. Prefers untagged (fresh) files, but falls back
+    to the newest pass/fail-tagged image so combined analyses (e.g. Team Structure
+    video + diagram) still get the image even when the image folder was scored —
+    and its files tagged — before the video arrived."""
+    untagged, tagged = [], []
     for key, lm in list_objects(s3, bucket, folder_prefix):
-        if is_tagged(key, pass_marker, fail_marker):
+        base = _untagged_base(key, pass_marker, fail_marker)
+        if not base.lower().endswith(IMAGE_EXTS):
             continue
-        if key.lower().endswith(IMAGE_EXTS):
-            cands.append((key, lm))
-    cands.sort(key=lambda x: x[1], reverse=True)
-    return cands[0][0] if cands else None
+        if is_tagged(key, pass_marker, fail_marker):
+            tagged.append((key, lm))
+        else:
+            untagged.append((key, lm))
+    pool = untagged if untagged else tagged
+    pool.sort(key=lambda x: x[1], reverse=True)
+    return pool[0][0] if pool else None
 
 
 def find_first_text(s3, bucket, folder_prefix, *, exclude_suffixes=(),
                     pass_marker="(Pass)", fail_marker="(Fail)") -> Optional[str]:
-    """Newest untagged .txt in the folder (ignores tagged earlier attempts)."""
-    cands = []
+    """Newest .txt in the folder. Prefers untagged files, falls back to the
+    newest tagged one (same reasoning as find_first_image)."""
+    untagged, tagged = [], []
     for key, lm in list_objects(s3, bucket, folder_prefix):
-        if is_tagged(key, pass_marker, fail_marker):
+        base = _untagged_base(key, pass_marker, fail_marker).lower()
+        if not base.endswith(".txt") or any(base.endswith(s) for s in exclude_suffixes):
             continue
-        low = key.lower()
-        if low.endswith(".txt") and not any(low.endswith(s) for s in exclude_suffixes):
-            cands.append((key, lm))
-    cands.sort(key=lambda x: x[1], reverse=True)
-    return cands[0][0] if cands else None
+        if is_tagged(key, pass_marker, fail_marker):
+            tagged.append((key, lm))
+        else:
+            untagged.append((key, lm))
+    pool = untagged if untagged else tagged
+    pool.sort(key=lambda x: x[1], reverse=True)
+    return pool[0][0] if pool else None

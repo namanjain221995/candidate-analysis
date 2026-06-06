@@ -80,6 +80,7 @@ def evaluate(
     client: requests.Session,
     *,
     system_prompt: str,
+    deliverable_name: Optional[str] = None,
     transcript_text: Optional[str] = None,
     resume_text: Optional[str] = None,
     reference_pdf_text: Optional[str] = None,
@@ -89,6 +90,8 @@ def evaluate(
     """Run one evaluation. Any combination of inputs may be provided."""
     blocks = []  # text segments for the user message
 
+    if deliverable_name:
+        blocks.append("DELIVERABLE NAME: " + deliverable_name)
     if reference_pdf_text:
         blocks.append("REFERENCE BASELINE (internal use only):\n" + reference_pdf_text)
     if resume_text:

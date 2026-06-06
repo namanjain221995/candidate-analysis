@@ -120,18 +120,24 @@ DELIVERABLE_RULES = [
 
     # Day 5  JD: the text and image folders are now scored standalone, AND the
     # JD video still references its sibling text + image. Separate results.
-    ("job description alignment  1 text",  "JD-prompt.txt",          ["resume", "own_text"]),
+    # (match_rule normalizes '_1' → ' 1' and collapses spaces, so one spelling
+    # per rule is enough and covers 'Alignment _1', 'Alignment  1', 'Alignment 1'.)
     ("job description alignment 1 text",   "JD-prompt.txt",          ["resume", "own_text"]),
-    ("job description alignment  1 image", "JD-prompt.txt",          ["resume", "own_image"]),
+    ("job description alignment 2 text",   "JD-prompt.txt",          ["resume", "own_text"]),
     ("job description alignment 1 image",  "JD-prompt.txt",          ["resume", "own_image"]),
+    ("job description alignment 2 image",  "JD-prompt.txt",          ["resume", "own_image"]),
     ("job description alignment",     "JD-prompt.txt",               ["resume", "sibling_text", "sibling_image"]),
     ("small talk",                    "smalltalk.txt",               ["resume"]),
 
-    # Day 6  System design: each problem image is scored standalone (own image),
-    # AND the system design video still references its matching diagram image.
+    # Day 6  System design: each problem image is scored standalone ONLY if it
+    # lives in a dedicated '...image' folder. In the current layout the diagram
+    # is uploaded INSIDE the same 'System Design Problem N' folder as the video,
+    # so the video evaluation pulls it via own_image (sibling_image stays as a
+    # fallback for a dedicated-folder layout). The worker skips kind=image events
+    # in non-image folders, so the in-folder diagram never spawns its own result.
     ("system design problem 1 image", "System-design.txt",           ["resume", "own_image"]),
     ("system design problem 2 image", "System-design.txt",           ["resume", "own_image"]),
-    ("system design",                 "System-design.txt",           ["resume", "sibling_image"]),
+    ("system design",                 "System-design.txt",           ["resume", "own_image", "sibling_image"]),
 ]
 
 # Folders that are INPUTS to a combined deliverable and are NOT scored on their own.
@@ -146,7 +152,9 @@ COMBINED_INPUT_MARKERS = []
 
 
 def match_rule(deliverable_folder_name: str):
-    name = deliverable_folder_name.lower()
+    # Normalize: lowercase, underscores → spaces, collapse repeated spaces, so
+    # 'Job Description Alignment _1 text' matches 'job description alignment 1 text'.
+    name = " ".join(deliverable_folder_name.lower().replace("_", " ").split())
     for needle, prompt_file, extras in DELIVERABLE_RULES:
         if needle in name:
             return prompt_file, extras

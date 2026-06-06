@@ -485,9 +485,14 @@ def transcribe_local_video(
     verbatim_mode = _get_verbatim_mode(settings)
 
     if not has_audio_stream(settings, video_path):
-        raise NonRetryableTranscriptionError(
-            f"Video has no audio stream to transcribe: {video_path.name}"
-        )
+        # Candidate uploaded a video with no audio track at all. Instead of
+        # failing permanently (which leaves the candidate with NO result and no
+        # explanation), return an empty transcript: the LLM worker detects it
+        # and writes a deterministic 0/FAIL result with re-record guidance,
+        # delivered through the normal Salesforce flow.
+        print(f"[WARN] no audio stream in {video_path.name} — returning empty transcript "
+              "so the scoring stage can give the candidate 0/FAIL feedback")
+        return "", 0.0
 
     mp3_path = video_path.with_name(f"{video_path.stem}__audio.mp3")
 

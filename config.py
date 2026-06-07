@@ -48,7 +48,9 @@ class Settings:
     # Transcription tuning
     transcript_suffix:   str  = _str("TRANSCRIPT_SUFFIX", "_transcripts.txt")
     force_retranscribe:  bool = _bool("FORCE_RETRANSCRIBE", False)
-    chunk_seconds:       int  = _int("CHUNK_SECONDS", 540)
+    # 180s (3-min) chunks: shorter chunks limit the damage if Whisper ever
+    # loops mid-chunk, improve accuracy, and parallelize better. (Was 540.)
+    chunk_seconds:       int  = _int("CHUNK_SECONDS", 180)
     overlap_seconds:     int  = _int("OVERLAP_SECONDS", 2)
     ffmpeg_path:         str  = _str("FFMPEG_PATH", "ffmpeg")
 

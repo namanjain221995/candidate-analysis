@@ -31,16 +31,12 @@ _RETRYABLE_STATUSES = {408, 409, 429, 500, 502, 503, 504}
 _NON_RETRYABLE_STATUSES = {400, 401, 403, 404, 413, 415}
 
 
-VERBATIM_TRANSCRIBE_PROMPT = (
-    "Transcribe exactly what is spoken. "
-    "Do not correct grammar. "
-    "Do not fix technical terms. "
-    "Do not rewrite sentences. "
-    "Preserve filler words such as um, uh, hmm, ah, eh. "
-    "Preserve repetitions, false starts, pauses, and mispronunciations. "
-    "If the speaker says a wrong word, keep the wrong word. "
-    "Output verbatim speech only."
-)
+# No transcription prompt is sent by default — plain Whisper output, zero
+# conditioning. (Whisper's `prompt` is sample-text conditioning, not an
+# instruction channel; a previous instruction-style prompt caused repetition
+# loops.) If specific vocabulary ever needs seeding, set
+# OPENAI_TRANSCRIBE_PROMPT to a SHORT natural sample sentence containing those
+# terms — never instructions.
 
 
 class NonRetryableTranscriptionError(RuntimeError):
@@ -269,16 +265,17 @@ def _parse_verbose_json(
         if not text:
             continue
 
-        # In verbatim mode, do NOT remove possible no-speech / repeated / odd words.
-        # For clean mode, keep previous filters.
-        if not verbatim_mode:
-            if seg.get("no_speech_prob") is not None:
-                if float(seg["no_speech_prob"]) > 0.8:
-                    continue
+        # Machine-artifact filters apply in EVERY mode: high no_speech_prob and
+        # high compression_ratio flag decoder hallucinations and repetition
+        # loops — API-side bugs, not speaker behavior. Verbatim mode protects
+        # the speaker's real words (fillers, false starts), never these.
+        if seg.get("no_speech_prob") is not None:
+            if float(seg["no_speech_prob"]) > 0.8:
+                continue
 
-            if seg.get("compression_ratio") is not None:
-                if float(seg["compression_ratio"]) > 2.4:
-                    continue
+        if seg.get("compression_ratio") is not None:
+            if float(seg["compression_ratio"]) > 2.4:
+                continue
 
         items.append((float(seg.get("start") or 0.0), text))
 
@@ -295,13 +292,12 @@ def _get_verbatim_mode(settings: Settings) -> bool:
 
 
 def _get_transcribe_prompt(settings: Settings) -> str:
+    # Default: NO prompt — plain transcription. Env override only, for
+    # optional vocabulary seeding with a natural sample sentence.
     custom_prompt = getattr(settings, "openai_transcribe_prompt", None)
 
     if custom_prompt:
         return str(custom_prompt)
-
-    if _get_verbatim_mode(settings):
-        return VERBATIM_TRANSCRIBE_PROMPT
 
     return ""
 
@@ -466,6 +462,34 @@ def _deduplicate_segments(
     return result
 
 
+def _collapse_repeated_segments(
+    segments: List[Tuple[float, str]],
+) -> List[Tuple[float, str]]:
+    """Collapse runs of consecutive segments with identical normalized text.
+
+    A human re-stating a sentence varies the wording at least slightly; the
+    Whisper decoder stuck in a loop emits the EXACT same segment text over and
+    over. Keeping only the first occurrence of each consecutive identical run
+    removes decoder loops and doubled boundary lines without touching genuine
+    filler words or repetitions inside a single segment. Runs in every mode."""
+    result: List[Tuple[float, str]] = []
+    prev_norm = None
+    dropped = 0
+
+    for ts, text in segments:
+        norm = " ".join(text.lower().split())
+        if prev_norm is not None and norm == prev_norm:
+            dropped += 1
+            continue
+        result.append((ts, text))
+        prev_norm = norm
+
+    if dropped:
+        print(f"[CLEANUP] collapsed {dropped} repeated segment(s) — decoder loop artifacts")
+
+    return result
+
+
 def format_timestamp(seconds: float) -> str:
     rounded = int(math.floor(seconds or 0.0))
     minutes, secs = divmod(rounded, 60)
@@ -539,6 +563,10 @@ def transcribe_local_video(
             chunk_path.unlink(missing_ok=True)
 
     merged.sort(key=lambda item: item[0])
+
+    # Always remove decoder-loop artifacts (consecutive identical segments),
+    # in verbatim mode too — these are API bugs, not the speaker's words.
+    merged = _collapse_repeated_segments(merged)
 
     merged = _deduplicate_segments(
         merged,

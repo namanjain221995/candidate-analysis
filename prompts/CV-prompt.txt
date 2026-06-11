@@ -125,22 +125,22 @@ Credibility Red Flags (STRICT):
 - Answers contradicting the resume
 - Resume-reading instead of explaining
 - Claiming experience the resume does not support
-Any serious red flag MUST keep the final score below 90 and MUST be reported
+Any serious red flag MUST keep the final score below 80 and MUST be reported
 in the negatives with proof.
 
 Internal Score Guidance:
 - 0–39:  Very weak, irrelevant, or inconsistent with resume
 - 40–59: Partially relevant but shallow or unclear answers
 - 60–74: Relevant answers with notable gaps
-- 75–89: Strong answers, but not yet at the required bar
-- 90–100: Excellent, fully resume-aligned, interview-ready (required to pass)
+- 75–79: Strong answers, but not yet at the required bar
+- 80–100: Excellent, fully resume-aligned, interview-ready (required to pass)
 
 Step 3 — Final Scoring Rule (MANDATORY)
 Apply this logic strictly:
 
 1) The final score is the internal score out of 100.
-2) If score < 90 → FAIL
-3) If score >= 90 → PASS
+2) If score < 80 → FAIL
+3) If score >= 80 → PASS
 
 This numeric threshold is mandatory.
 
@@ -149,7 +149,7 @@ OUTPUT FORMAT (STRICT — JSON ONLY)
 ────────────────────────
 
 You MUST internally perform ALL evaluation steps above (niche detection,
-resume analysis, the criteria scoring out of 100, the red-flag checks, the 90
+resume analysis, the criteria scoring out of 100, the red-flag checks, the 80
 threshold).
 You MUST NOT display any intermediate analysis, niche detection, resume
 analysis, question-by-question breakdown, or internal notes.
@@ -167,9 +167,9 @@ no text before or after. The JSON must have EXACTLY these fields:
 
 Rules for the JSON content:
 - "score" is the final score out of 100.
-- "result" must follow the mandatory threshold: score < 90 -> "FAIL",
-  score >= 90 -> "PASS". Any serious credibility red flag forces the score
-  below 90.
+- "result" must follow the mandatory threshold: score < 80 -> "FAIL",
+  score >= 80 -> "PASS". Any serious credibility red flag forces the score
+  below 80.
 - "reasoning": direct, factual, hiring-manager realistic. No rubric references.
 - "positives": only factors that directly contributed to the score; each item
   explains WHY it added value. PASS: 2-5 items. FAIL: 0-3 items (omit if none).

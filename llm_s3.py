@@ -114,13 +114,20 @@ def _untagged_base(key: str, pass_marker="(Pass)", fail_marker="(Fail)") -> str:
     return key
 
 
-def find_first_image(s3, bucket, folder_prefix, *, pass_marker="(Pass)", fail_marker="(Fail)") -> Optional[str]:
-    """Newest image in the folder. Prefers untagged (fresh) files, but falls back
-    to the newest pass/fail-tagged image so combined analyses (e.g. Team Structure
-    video + diagram) still get the image even when the image folder was scored —
-    and its files tagged — before the video arrived."""
+def find_first_image(s3, bucket, folder_prefix, *, exclude_prefix=None,
+                     pass_marker="(Pass)", fail_marker="(Fail)") -> Optional[str]:
+    """Newest image under folder_prefix (recursive). Prefers untagged (fresh)
+    files, but falls back to the newest pass/fail-tagged image so combined
+    analyses (e.g. Team Structure video + diagram) still get the image even when
+    the image folder was scored — and its files tagged — before the video arrived.
+
+    Pass exclude_prefix to ignore images inside a given subfolder — used when a
+    video deliverable pulls a diagram from a SIBLING folder, not its own (Day 6
+    'System Design Problem 1' video pulling 'Problem 2' diagram)."""
     untagged, tagged = [], []
     for key, lm in list_objects(s3, bucket, folder_prefix):
+        if exclude_prefix and key.startswith(exclude_prefix):
+            continue
         base = _untagged_base(key, pass_marker, fail_marker)
         if not base.lower().endswith(IMAGE_EXTS):
             continue

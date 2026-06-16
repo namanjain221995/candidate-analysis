@@ -134,14 +134,18 @@ DELIVERABLE_RULES = [
     ("job description alignment",     "JD-prompt.txt",               ["resume", "sibling_text", "sibling_image"]),
     ("small talk",                    "smalltalk.txt",               ["resume"]),
 
-    # Day 6  System design: each problem image is scored standalone ONLY if it
-    # lives in a dedicated '...image' folder. In the current layout the diagram
-    # is uploaded INSIDE the same 'System Design Problem N' folder as the video,
-    # so the video evaluation pulls it via own_image (sibling_image stays as a
-    # fallback for a dedicated-folder layout). The worker skips kind=image events
-    # in non-image folders, so the in-folder diagram never spawns its own result.
-    ("system design problem 1 image", "System-design.txt",           ["resume", "own_image"]),
-    ("system design problem 2 image", "System-design.txt",           ["resume", "own_image"]),
+    # Day 6  System design. Per candidate there are two folders:
+    #   'System Design Problem 2' holds the architecture DIAGRAM (image). It is a
+    #       standalone image deliverable: scored on its OWN diagram (own_image),
+    #       producing its own _result.json + Salesforce record.
+    #   'System Design Problem 1' holds the VIDEO. It is scored from its transcript
+    #       AND enriched with the diagram living in the sibling problem folder
+    #       (Problem 2) via day_image, so the spoken design is judged against the
+    #       drawn architecture. The image therefore feeds BOTH results.
+    # These two MUST come before the generic 'system design' fallback (first
+    # substring match wins). The fallback covers any other/legacy layout.
+    ("system design problem 2",       "System-design.txt",           ["resume", "own_image"]),
+    ("system design problem 1",       "System-design.txt",           ["resume", "day_image"]),
     ("system design",                 "System-design.txt",           ["resume", "own_image", "sibling_image"]),
 ]
 

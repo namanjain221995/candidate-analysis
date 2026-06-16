@@ -116,6 +116,23 @@ def _gather_and_score(s3, client, *, deliverable_prefix, deliverable_name, trans
                 if txt:
                     extra_text = llm_s3.read_text(s3, LLM_SETTINGS.bucket, txt)
 
+        elif extra == "day_image":
+            # Cross-folder pull: a spoken-design video (Day 6 'System Design
+            # Problem 1') is judged against the diagram that lives in the SIBLING
+            # problem folder ('System Design Problem 2'). Take the newest image
+            # anywhere under the day, excluding this deliverable's own folder.
+            img = llm_s3.find_first_image(
+                s3, LLM_SETTINGS.bucket, day_prefix, exclude_prefix=deliverable_prefix
+            )
+            if img:
+                tmp = Path("/tmp") / Path(img).name
+                llm_s3.download(s3, LLM_SETTINGS.bucket, img, tmp)
+                image_urls.append(llm_processor.image_to_data_url(tmp))
+                tmp.unlink(missing_ok=True)
+                print(f"[DAY-IMAGE] {deliverable_name} <- {img}")
+            else:
+                print(f"[WARN] no sibling image under day {day_prefix} for {deliverable_name}")
+
         elif extra == "own_image":
             # standalone image deliverable: score the image in THIS folder
             img = llm_s3.find_first_image(s3, LLM_SETTINGS.bucket, deliverable_prefix)
@@ -324,18 +341,21 @@ def _handle(s3, client, body: dict):
         print(f"[SKIP] already-tagged file: {fname}")
         return
 
-    # Images/texts landing in a folder that is NOT a dedicated image/text
-    # deliverable are combined INPUTS (e.g. the Day 6 diagram uploaded inside
-    # the 'System Design Problem N' folder next to the video). They feed the
-    # video's evaluation via own_image/own_text and must not produce their own
-    # result — that would corrupt attempt numbering and the day overall.
-    name_l = deliverable_name.lower()
-    if kind == "image" and not any(w in name_l for w in ("image", "diagram")):
-        print(f"[SKIP] image is combined input only (folder is not an image deliverable): {key}")
-        return
-    if kind == "text" and "text" not in name_l:
-        print(f"[SKIP] text is combined input only (folder is not a text deliverable): {key}")
-        return
+    # An image/text is scored standalone ONLY when its deliverable rule asks for
+    # the folder's OWN content (own_image / own_text) — e.g. Day 6 'System Design
+    # Problem 2' diagram, JD '… Image'/'… Text', Team Structure 'Diagram'. An
+    # image/text dropped into a video-only folder is a combined INPUT (pulled by a
+    # sibling/day rule, e.g. Problem 1's video pulling Problem 2's diagram) and must
+    # NOT spawn its own result, or attempt numbering and the day overall break.
+    if kind in ("image", "text"):
+        _rule = match_rule(deliverable_name)
+        _extras = _rule[1] if _rule else []
+        if kind == "image" and "own_image" not in _extras:
+            print(f"[SKIP] image is combined input only (no own_image rule): {key}")
+            return
+        if kind == "text" and "own_text" not in _extras:
+            print(f"[SKIP] text is combined input only (no own_text rule): {key}")
+            return
 
     # the deliverable-result id rides the filename (video stem → transcript stem)
     if kind == "transcript":

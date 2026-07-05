@@ -27,14 +27,16 @@ from pathlib import Path
 
 import boto3
 
+import engines
 from config import SETTINGS
 import s3_store
 from transcriber import (
     NonRetryableTranscriptionError,
     create_openai_client,
     ensure_ffmpeg,
+    prepare_audio,
     safe_local_filename,
-    transcribe_local_video,
+    transcribe_engine,
     transcript_output_name,
 )
 
@@ -42,16 +44,41 @@ from transcriber import (
 _stop = threading.Event()
 
 
+def _pending_engines(s3, bucket: str, video_key: str, video_name: str):
+    """The engines that still need a transcript for this video.
+
+    Per-engine skip: an engine whose transcript already exists is dropped, so
+    re-runs only redo the missing engine(s). AssemblyAI is skipped entirely when
+    its key isn't configured, so production (Whisper) is never blocked by it.
+
+    Returns [(engine, transcript_key), ...].
+    """
+    pending = []
+    for engine in engines.configured_engines():
+        if engine == engines.ASSEMBLYAI and not SETTINGS.assemblyai_api_key:
+            print(f"[SKIP] ({engine}) ASSEMBLYAI_API_KEY not configured — Whisper-only")
+            continue
+        transcript_name = transcript_output_name(
+            video_name, SETTINGS.transcript_suffix, engines.engine_tag(engine)
+        )
+        transcript_key = s3_store.sibling_key(video_key, transcript_name)
+        if not SETTINGS.force_retranscribe and s3_store.object_exists(s3, bucket, transcript_key):
+            print(f"[SKIP] ({engine}) transcript exists: {transcript_key}")
+            continue
+        pending.append((engine, transcript_key))
+    return pending
+
+
 def _handle_message(sqs, s3, client, body: dict) -> None:
     bucket    = body["bucket"]
     video_key = body["video_key"]
     video_name = video_key.rsplit("/", 1)[-1]
 
-    transcript_name = transcript_output_name(video_name, SETTINGS.transcript_suffix)
-    transcript_key  = s3_store.sibling_key(video_key, transcript_name)
-
-    if not SETTINGS.force_retranscribe and s3_store.object_exists(s3, bucket, transcript_key):
-        print(f"[SKIP] transcript exists: {transcript_key}")
+    # Both engines transcribe the SAME source audio. Whisper is always first, so
+    # the production transcript is written (and durable) before AssemblyAI runs.
+    pending = _pending_engines(s3, bucket, video_key, video_name)
+    if not pending:
+        print(f"[SKIP] all transcripts exist: {video_key}")
         return
 
     if s3_store.object_size(s3, bucket, video_key) == 0:
@@ -64,11 +91,23 @@ def _handle_message(sqs, s3, client, body: dict) -> None:
         if local_video.stat().st_size == 0:
             raise RuntimeError(f"Downloaded video empty; will retry: {video_key}")
 
-        content, audio_seconds = transcribe_local_video(SETTINGS, client, local_video)
+        # Extract audio ONCE; feed the same mp3 to every engine. None => the
+        # video has no audio track: each engine gets an empty transcript so the
+        # scoring stage gives a deterministic 0/FAIL.
+        mp3_path = prepare_audio(SETTINGS, local_video)
 
-        print(f"[UP] s3://{bucket}/{transcript_key}")
-        s3_store.upload_text(s3, bucket, transcript_key, content)
-        print(f"[DONE] {video_key} ({audio_seconds / 60:.1f} min audio)")
+        for engine, transcript_key in pending:
+            started = time.monotonic()
+            if mp3_path is None:
+                content, audio_seconds = "", 0.0
+            else:
+                content, audio_seconds = transcribe_engine(SETTINGS, client, engine, mp3_path)
+
+            print(f"[UP] ({engine}) s3://{bucket}/{transcript_key}")
+            s3_store.upload_text(s3, bucket, transcript_key, content)
+            # Per-engine cost/latency signal for the A/B comparison.
+            print(f"[DONE] ({engine}) {video_key} "
+                  f"({audio_seconds / 60:.1f} min audio, {time.monotonic() - started:.1f}s)")
 
 
 def _worker_loop(worker_no: int) -> None:
@@ -130,9 +169,17 @@ def main() -> None:
     ensure_ffmpeg(SETTINGS)
     _install_signal_handlers()
 
+    active = engines.configured_engines()
+    if engines.ASSEMBLYAI in active and not SETTINGS.assemblyai_api_key:
+        active = [e for e in active if e != engines.ASSEMBLYAI]
+        print("[MAIN] ASSEMBLYAI_API_KEY not set — running Whisper-only")
+
     print(f"[MAIN] bucket={SETTINGS.bucket}")
     print(f"[MAIN] queue={SETTINGS.transcript_queue_url}")
     print(f"[MAIN] threads={SETTINGS.worker_threads}  model={SETTINGS.openai_whisper_model}")
+    print(f"[MAIN] engines={','.join(active)}"
+          + (f"  assemblyai_models={SETTINGS.assemblyai_speech_models}"
+             if engines.ASSEMBLYAI in active else ""))
 
     threads = []
     for i in range(SETTINGS.worker_threads):

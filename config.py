@@ -38,12 +38,35 @@ class Settings:
     sqs_visibility_timeout:  int = _int("SQS_VISIBILITY_TIMEOUT", 1800)  # 30 min
     worker_threads:          int = _int("WORKER_THREADS", 4)           # parallel videos
 
-    # OpenAI
+    # OpenAI (Whisper engine = "W")
     openai_api_key:           str = _str("OPENAI_API_KEY")
     openai_whisper_model:     str = _str("OPENAI_WHISPER_MODEL", "whisper-1")
     openai_transcribe_prompt: str = _str("OPENAI_TRANSCRIBE_PROMPT", "")
     openai_audio_bitrate:     str = _str("OPENAI_AUDIO_BITRATE", "64k")
     language:                 str = _str("LANGUAGE", "en")
+
+    # AssemblyAI (engine = "A") — parallel A/B engine, S3-only (never Salesforce).
+    # The model and verbatim settings are PINNED here so a provider-side default
+    # change can never silently skew the Whisper-vs-AssemblyAI comparison.
+    assemblyai_api_key:       str  = _str("ASSEMBLYAI_API_KEY")
+    # Speech models in PRIORITY order (comma-separated). AssemblyAI routes to the
+    # first supported model and AUTOMATICALLY FALLS BACK to the next, so
+    # "universal-3-pro,universal-2" uses Universal-3 Pro (newest/best, English-
+    # capable) and falls back to Universal-2 otherwise — this is AssemblyAI's own
+    # default. Sent as the `speech_models` array (the singular `speech_model` is
+    # deprecated). To try a newer model later (e.g. universal-3-5-pro) just change
+    # this env var — no code change. Leave blank to let AssemblyAI pick its default.
+    assemblyai_speech_models: str  = _str("ASSEMBLYAI_SPEECH_MODELS", "universal-3-pro,universal-2")
+    # Verbatim: keep fillers / false starts / disfluencies so (A) matches
+    # Whisper's VERBATIM_MODE and the comparison is fair.
+    assemblyai_disfluencies:  bool = _bool("ASSEMBLYAI_DISFLUENCIES", True)
+    assemblyai_poll_seconds:      int = _int("ASSEMBLYAI_POLL_SECONDS", 3)
+    assemblyai_poll_max_attempts: int = _int("ASSEMBLYAI_POLL_MAX_ATTEMPTS", 600)
+
+    # Which engines transcribe every video (comma-separated; default both).
+    # Whisper always runs first regardless of order. Set to "W" to fall back to
+    # the original Whisper-only behaviour. See engines.configured_engines().
+    transcription_engines: str = _str("TRANSCRIPTION_ENGINES", "W,A")
 
     # Transcription tuning
     transcript_suffix:   str  = _str("TRANSCRIPT_SUFFIX", "_transcripts.txt")

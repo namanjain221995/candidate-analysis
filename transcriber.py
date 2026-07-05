@@ -20,11 +20,14 @@ from typing import List, Optional, Tuple
 
 import requests
 
+import engines
 from config import Settings
 
 
 OPENAI_AUDIO_URL = "https://api.openai.com/v1/audio/transcriptions"
 OPENAI_MAX_FILE_BYTES = 25 * 1024 * 1024
+
+ASSEMBLYAI_BASE_URL = "https://api.assemblyai.com/v2"
 
 _MAX_API_ATTEMPTS = 5
 _RETRYABLE_STATUSES = {408, 409, 429, 500, 502, 503, 504}
@@ -53,8 +56,12 @@ def safe_local_filename(name: str, fallback: str = "file.bin") -> str:
     return name or fallback
 
 
-def transcript_output_name(video_name: str, transcript_suffix: str) -> str:
-    return f"{Path(video_name).stem}{transcript_suffix}"
+def transcript_output_name(video_name: str, transcript_suffix: str, engine_tag: str = "") -> str:
+    """Build a transcript filename. The engine tag sits between the stem and the
+    suffix; Whisper's tag is empty (original convention), AssemblyAI's is '(A)':
+      Whisper:    'video.mp4'  -> 'video_transcripts.txt'
+      AssemblyAI: 'video.mp4'  -> 'video(A)_transcripts.txt'."""
+    return f"{Path(video_name).stem}{engine_tag}{transcript_suffix}"
 
 
 def _ffprobe_path(settings: Settings) -> str:
@@ -496,32 +503,42 @@ def format_timestamp(seconds: float) -> str:
     return f"{minutes}:{secs:02d}"
 
 
-def transcribe_local_video(
-    settings: Settings,
-    client: requests.Session,
-    video_path: Path,
-) -> Tuple[str, float]:
-    """Transcribe local video file.
+def prepare_audio(settings: Settings, video_path: Path) -> Optional[Path]:
+    """Extract the mono 16 kHz MP3 ONCE so both engines share the exact same
+    input (clean paired comparison + saves a second ffmpeg pass).
 
-    Returns:
-        (transcript_text, audio_seconds)
+    Returns the mp3 path, or None when the video has no audio stream at all —
+    the caller then writes an empty transcript so the scoring stage gives the
+    candidate a deterministic 0/FAIL with re-record guidance.
     """
-    verbatim_mode = _get_verbatim_mode(settings)
-
     if not has_audio_stream(settings, video_path):
         # Candidate uploaded a video with no audio track at all. Instead of
         # failing permanently (which leaves the candidate with NO result and no
-        # explanation), return an empty transcript: the LLM worker detects it
-        # and writes a deterministic 0/FAIL result with re-record guidance,
-        # delivered through the normal Salesforce flow.
+        # explanation), the caller returns an empty transcript: the LLM worker
+        # detects it and writes a deterministic 0/FAIL result with re-record
+        # guidance, delivered through the normal Salesforce flow.
         print(f"[WARN] no audio stream in {video_path.name} — returning empty transcript "
               "so the scoring stage can give the candidate 0/FAIL feedback")
-        return "", 0.0
+        return None
 
     mp3_path = video_path.with_name(f"{video_path.stem}__audio.mp3")
 
     print("[RUN] extracting audio mono 16 kHz MP3")
     extract_audio_mp3(settings, video_path, mp3_path)
+    return mp3_path
+
+
+def transcribe_whisper_from_mp3(
+    settings: Settings,
+    client: requests.Session,
+    mp3_path: Path,
+) -> Tuple[str, float]:
+    """Whisper (engine 'W') transcription from an already-extracted mp3.
+
+    Returns (transcript_text, audio_seconds). Output is byte-identical to the
+    original Whisper path — only audio extraction moved out to prepare_audio().
+    """
+    verbatim_mode = _get_verbatim_mode(settings)
 
     duration_seconds = audio_duration_seconds(settings, mp3_path)
     audio_mb = mp3_path.stat().st_size / (1024 * 1024)
@@ -582,3 +599,223 @@ def transcribe_local_video(
         print("[WARN] transcript empty — audio may be silent or too noisy")
 
     return content, float(duration_seconds)
+
+
+def transcribe_local_video(
+    settings: Settings,
+    client: requests.Session,
+    video_path: Path,
+) -> Tuple[str, float]:
+    """Back-compat wrapper: extract audio + Whisper-transcribe a local video.
+
+    Behaviour is unchanged from before the engine split (used by any caller that
+    wants the single-engine Whisper path end to end).
+    """
+    mp3_path = prepare_audio(settings, video_path)
+    if mp3_path is None:
+        return "", 0.0
+    return transcribe_whisper_from_mp3(settings, client, mp3_path)
+
+
+# ── AssemblyAI engine ('A') ────────────────────────────────────────────────────
+#
+# AssemblyAI reuses the SAME extracted mp3 (no re-extraction, no chunking — the
+# v2 API handles long audio via upload). Verbatim is enabled (disfluencies=True)
+# so (A) keeps fillers/false starts like Whisper's VERBATIM_MODE. Output is
+# formatted into the exact "M:SS: <text>" lines the prompts cite, byte-compatible
+# with Whisper's transcript format.
+
+
+def _aai_speech_models(settings: Settings) -> List[str]:
+    """Parse the comma-separated ASSEMBLYAI_SPEECH_MODELS into a priority list,
+    e.g. 'universal-3-pro,universal-2' -> ['universal-3-pro', 'universal-2'].
+    AssemblyAI routes to the first supported model and falls back down the list."""
+    raw = getattr(settings, "assemblyai_speech_models", "") or ""
+    return [m.strip() for m in raw.split(",") if m.strip()]
+
+
+def _aai_request(method, url, headers, *, json=None, data=None):
+    """One AssemblyAI REST call with the same retry policy as the Whisper path."""
+    last_err: Optional[Exception] = None
+    for attempt in range(_MAX_API_ATTEMPTS):
+        # For the file-upload call `data` is an open file handle. A previous
+        # attempt consumed it to EOF, so rewind before re-sending or a retry would
+        # upload 0 bytes.
+        if hasattr(data, "seek"):
+            try:
+                data.seek(0)
+            except Exception:
+                pass
+        try:
+            resp = requests.request(
+                method, url, headers=headers, json=json, data=data, timeout=600
+            )
+        except (requests.Timeout, requests.ConnectionError) as exc:
+            last_err = exc
+            if attempt < _MAX_API_ATTEMPTS - 1:
+                sleep_s = _backoff_seconds(attempt)
+                print(f"[ASSEMBLYAI] network error ({exc}); retry in {sleep_s:.0f}s")
+                time.sleep(sleep_s)
+                continue
+            raise
+
+        if resp.status_code == 200:
+            return resp
+
+        body = (resp.text or "").strip()[:1500]
+        if resp.status_code in _NON_RETRYABLE_STATUSES:
+            raise NonRetryableTranscriptionError(
+                f"AssemblyAI rejected request (HTTP {resp.status_code}): {body}"
+            )
+        if resp.status_code in _RETRYABLE_STATUSES and attempt < _MAX_API_ATTEMPTS - 1:
+            sleep_s = _backoff_seconds(attempt)
+            print(f"[ASSEMBLYAI] HTTP {resp.status_code}; retry in {sleep_s:.0f}s")
+            time.sleep(sleep_s)
+            continue
+        raise RuntimeError(f"AssemblyAI failed HTTP {resp.status_code}: {body}")
+
+    if last_err:
+        raise last_err
+    raise RuntimeError("AssemblyAI: exhausted retries")
+
+
+def _aai_poll(settings: Settings, headers: dict, transcript_id: str) -> dict:
+    """Poll the transcript until it is 'completed' or 'error'."""
+    interval = max(1, settings.assemblyai_poll_seconds)
+    for _ in range(max(1, settings.assemblyai_poll_max_attempts)):
+        data = _aai_request(
+            "GET", f"{ASSEMBLYAI_BASE_URL}/transcript/{transcript_id}", headers
+        ).json()
+        status = data.get("status")
+        if status in ("completed", "error"):
+            return data
+        time.sleep(interval)
+    raise RuntimeError("AssemblyAI: polling timed out before completion")
+
+
+def _aai_lines_from_words(words: List[dict]) -> List[Tuple[float, str]]:
+    """Fallback segmentation: group words into sentence-ish lines using
+    sentence-ending punctuation, timestamping each line at its first word."""
+    segments: List[Tuple[float, str]] = []
+    cur: List[str] = []
+    start: Optional[float] = None
+    for w in words:
+        text = (w.get("text") or "").strip()
+        if not text:
+            continue
+        if start is None:
+            start = float(w.get("start") or 0.0) / 1000.0
+        cur.append(text)
+        if text.endswith((".", "?", "!")):
+            segments.append((start, " ".join(cur).strip()))
+            cur, start = [], None
+    if cur:
+        segments.append((start or 0.0, " ".join(cur).strip()))
+    return segments
+
+
+def _aai_segments(settings: Settings, headers: dict, transcript_id: str, transcript: dict
+                  ) -> List[Tuple[float, str]]:
+    """Sentence-level (start_seconds, text) segments for the M:SS line format.
+
+    Prefer AssemblyAI's /sentences resource (clean sentence boundaries, like
+    Whisper segments); fall back to grouping words; finally the whole text."""
+    try:
+        sentences = _aai_request(
+            "GET", f"{ASSEMBLYAI_BASE_URL}/transcript/{transcript_id}/sentences", headers
+        ).json().get("sentences") or []
+    except Exception as exc:
+        print(f"[ASSEMBLYAI] sentences endpoint unavailable ({exc}); using words")
+        sentences = []
+
+    segments: List[Tuple[float, str]] = []
+    for s in sentences:
+        text = (s.get("text") or "").strip()
+        if not text:
+            continue
+        segments.append((float(s.get("start") or 0.0) / 1000.0, text))
+    if segments:
+        return segments
+
+    words = transcript.get("words") or []
+    if words:
+        return _aai_lines_from_words(words)
+
+    full = (transcript.get("text") or "").strip()
+    return [(0.0, full)] if full else []
+
+
+def transcribe_assemblyai_from_mp3(settings: Settings, mp3_path: Path) -> Tuple[str, float]:
+    """AssemblyAI (engine 'A') transcription from the shared extracted mp3.
+
+    Returns (transcript_text, audio_seconds) in the same format Whisper emits.
+    """
+    if not settings.assemblyai_api_key:
+        raise NonRetryableTranscriptionError("ASSEMBLYAI_API_KEY is not configured.")
+
+    headers = {"authorization": settings.assemblyai_api_key}
+    speech_models = _aai_speech_models(settings)
+    duration_seconds = audio_duration_seconds(settings, mp3_path)
+    audio_mb = mp3_path.stat().st_size / (1024 * 1024)
+    print(
+        f"[ASSEMBLYAI] uploading {audio_mb:.1f} MB "
+        f"({duration_seconds / 60:.1f} min) -> {','.join(speech_models) or 'default'}"
+    )
+
+    # 1) upload the SAME mp3 the Whisper path used (raw bytes, streamed)
+    with open(mp3_path, "rb") as fh:
+        upload_url = _aai_request(
+            "POST", f"{ASSEMBLYAI_BASE_URL}/upload", headers, data=fh
+        ).json()["upload_url"]
+
+    # 2) create the transcript with PINNED verbatim config
+    config = {
+        "audio_url": upload_url,
+        # Verbatim: keep fillers / false starts / stumbles so (A) is comparable
+        # to Whisper's VERBATIM_MODE.
+        "disfluencies": bool(settings.assemblyai_disfluencies),
+        "punctuate": True,
+        "format_text": True,
+    }
+    # Priority-ordered model list — AssemblyAI uses the first supported model and
+    # automatically falls back to the next (e.g. universal-3-pro -> universal-2).
+    if speech_models:
+        config["speech_models"] = speech_models
+    if settings.language:
+        config["language_code"] = settings.language
+
+    transcript_id = _aai_request(
+        "POST", f"{ASSEMBLYAI_BASE_URL}/transcript", headers, json=config
+    ).json()["id"]
+
+    # 3) poll to completion
+    transcript = _aai_poll(settings, headers, transcript_id)
+    if transcript.get("status") == "error":
+        raise NonRetryableTranscriptionError(
+            f"AssemblyAI transcription failed: {transcript.get('error')}"
+        )
+
+    # 4) format into the exact M:SS line format the prompts cite
+    segments = _aai_segments(settings, headers, transcript_id, transcript)
+    lines = [f"{format_timestamp(ts)}: {text}" for ts, text in segments if text]
+    content = ("\n".join(lines).strip() + "\n") if lines else ""
+
+    print(f"[ASSEMBLYAI] transcript: {len(lines)} segments")
+    if not lines:
+        print("[WARN] AssemblyAI transcript empty — audio may be silent or too noisy")
+
+    return content, float(duration_seconds)
+
+
+def transcribe_engine(
+    settings: Settings,
+    whisper_client: requests.Session,
+    engine: str,
+    mp3_path: Path,
+) -> Tuple[str, float]:
+    """Dispatch a single engine over the SHARED extracted mp3."""
+    if engine == engines.WHISPER:
+        return transcribe_whisper_from_mp3(settings, whisper_client, mp3_path)
+    if engine == engines.ASSEMBLYAI:
+        return transcribe_assemblyai_from_mp3(settings, mp3_path)
+    raise NonRetryableTranscriptionError(f"unknown transcription engine: {engine!r}")

@@ -43,8 +43,8 @@ jobs:
           OPENAI_API_KEY: "sk-ci-dummy"
           AWS_DEFAULT_REGION: "us-east-1"
         run: |
-          python -c "import config, s3_store, transcriber"
-          python -c "import llm_config, llm_s3, llm_processor, llm_overall"
+          python -c "import engines, config, s3_store, transcriber, main"
+          python -c "import llm_config, llm_s3, llm_processor, llm_overall, llm_worker"
           echo "imports OK"
 
   # ────────────────────────────────────────────────────────────

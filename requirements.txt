@@ -1,3 +1,8 @@
 boto3>=1.34,<2.0
 requests>=2.31,<3.0
 python-dotenv>=1.0,<2.0
+# AssemblyAI parallel transcription engine (A/B vs Whisper). The pipeline calls
+# AssemblyAI over its REST API with `requests` to mirror the existing Whisper
+# client; the official SDK is pinned here so the worker can also call AssemblyAI
+# in isolation.
+assemblyai>=0.34,<1.0

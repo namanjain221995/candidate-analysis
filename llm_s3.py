@@ -47,18 +47,31 @@ def is_tagged(key: str, pass_marker: str, fail_marker: str) -> bool:
     return pass_marker in name or fail_marker in name
 
 
-def tag_folder_files(s3, bucket, folder_prefix, marker, *, pass_marker, fail_marker) -> int:
-    """Append `marker` to every UNtagged file directly in folder_prefix (S3 copy+delete).
+def tag_folder_files(s3, bucket, folder_prefix, marker, *, only_tag=None,
+                     exclude_tag=None, pass_marker, fail_marker) -> int:
+    """Append `marker` to UNtagged files directly in folder_prefix (S3 copy+delete).
 
     Only files at this level (not nested subfolders) and not already tagged are renamed.
     The marker goes after the extension so a tagged file matches no router route and
-    is never re-processed. Returns the number of files tagged."""
+    is never re-processed. Returns the number of files tagged.
+
+    Engine scoping (only one of only_tag / exclude_tag is used):
+      - only_tag='(A)'    → AssemblyAI: stamp ONLY files carrying '(A)' (its own
+                            transcript / result / sf_log). Touches nothing else.
+      - exclude_tag='(A)' → Whisper (untagged): stamp every NON-AssemblyAI file
+                            (its own transcript / result / sf_log, plus the shared
+                            video/image), exactly like the original pipeline — while
+                            NEVER renaming AssemblyAI's in-flight '(A)' files."""
     count = 0
     for key in list_prefix(s3, bucket, folder_prefix):
         rel = key[len(folder_prefix):]
         if not rel or "/" in rel:           # skip nested objects / folder marker
             continue
         if pass_marker in rel or fail_marker in rel:
+            continue
+        if only_tag is not None and only_tag not in rel:
+            continue
+        if exclude_tag is not None and exclude_tag in rel:
             continue
         new_key = key + marker
         try:

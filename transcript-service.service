@@ -3,12 +3,16 @@ Description=Candidate transcript worker (SQS + Whisper)
 After=network-online.target
 Wants=network-online.target
 
+# NOTE: paths aligned with the CI/CD deploy target (/home/ec2-user/candidate-analysis,
+# same as llm-service.service) so `git pull` updates BOTH services to the same code,
+# including the AssemblyAI engine. ASSEMBLYAI_API_KEY / TRANSCRIPTION_ENGINES come
+# from the shared EnvironmentFile below.
 [Service]
 Type=simple
 User=ec2-user
-WorkingDirectory=/opt/transcript-service
-EnvironmentFile=/opt/transcript-service/.env
-ExecStart=/opt/transcript-service/venv/bin/python /opt/transcript-service/main.py
+WorkingDirectory=/home/ec2-user/candidate-analysis
+EnvironmentFile=/home/ec2-user/candidate-analysis/.env
+ExecStart=/home/ec2-user/candidate-analysis/venv/bin/python /home/ec2-user/candidate-analysis/main.py
 Restart=always
 RestartSec=5
 

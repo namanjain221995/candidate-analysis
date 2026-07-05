@@ -14,7 +14,8 @@ S3 (video uploaded) ──▶ trigger Lambda ──▶ SQS (transcript-jobs) ─
 | File | Where it runs | Purpose |
 |------|---------------|---------|
 | `main.py` | EC2 | Multi-threaded SQS worker — the thing you run |
-| `transcriber.py` | EC2 | Audio extraction, chunking, Whisper calls, cleanup |
+| `transcriber.py` | EC2 | Audio extraction, chunking, Whisper + AssemblyAI calls, cleanup |
+| `engines.py` | EC2 | Shared engine identifiers (W=Whisper, A=AssemblyAI) + filename tagging |
 | `s3_store.py` | EC2 | S3 download / upload helpers |
 | `config.py` | EC2 | Reads settings from environment / `.env` |
 | `requirements.txt` | EC2 | Python dependencies |
@@ -92,6 +93,18 @@ journalctl -u transcript-service -f      # live logs
 
 ## How transcripts are named
 
-For a video `Day1_HR_Jay.mp4`, the transcript is written to the **same folder**
-as `Day1_HR_Jay_transcripts.txt`. Re-running skips videos that already have a
-transcript unless `FORCE_RETRANSCRIBE=true`.
+Each video is transcribed by **two engines in parallel** on the same extracted
+audio (see `engines.py`). **Only AssemblyAI is tagged** — Whisper keeps the
+original filename untouched, so production is byte-identical to before. For a
+video `Day1_HR_Jay.mp4`, two transcripts are written to the **same folder**:
+
+```
+Day1_HR_Jay_transcripts.txt      ← Whisper   (untagged; production: scored + Salesforce + S3)
+Day1_HR_Jay(A)_transcripts.txt   ← AssemblyAI (A/B: scored + S3 only)
+```
+
+The skip-if-exists check is **per engine**, so re-running only redoes the
+missing engine(s) (unless `FORCE_RETRANSCRIBE=true`). Set
+`ASSEMBLYAI_API_KEY` to enable `(A)`; leave it blank to run Whisper only.
+`TRANSCRIPTION_ENGINES` (default `W,A`) controls which engines run — Whisper is
+always first so the production path is durable before AssemblyAI runs.

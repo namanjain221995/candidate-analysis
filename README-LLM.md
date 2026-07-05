@@ -11,10 +11,41 @@ transcript .txt / image .png / JD .txt written to S3
      - video deliverable  → score from transcript (+resume, +reference PDF)
      - image deliverable  → score the PNG via vision
      - combined (System Design, Team Structure, JD) → video pulls in sibling image/text
-  → writes <deliverable>_result.json in the folder
-  → when a day is complete → DayOVERALL_result.json
-  → refreshes CANDIDATE_OVERALL_result.json at the candidate root
+  → writes <deliverable>_result(<engine>).json in the folder
+  → when a day is complete FOR THAT ENGINE → DayOVERALL(<engine>)_result.json
+  → candidate overall stays DISABLED
 ```
+
+## Two transcription engines (A/B)
+Every video is transcribed by **both** engines on the same source audio (see
+`engines.py`):
+
+| Engine | Tag | Scored | Salesforce | S3 |
+|--------|-----|--------|------------|----|
+| Whisper    | *(none)* | yes | **yes** (production) | yes |
+| AssemblyAI | `(A)` | yes | no  | yes |
+
+**Only AssemblyAI is tagged.** Whisper keeps the ORIGINAL filenames untouched, so
+the production path (and its Salesforce payload) is byte-identical to before
+AssemblyAI existed — "no tag = Whisper, `(A)` = AssemblyAI". The tag lives in the
+**filename only**; folders, prefixes, and `metadata.json` are untouched:
+
+| | Whisper (untagged, production) | AssemblyAI (S3-only) |
+|--|--|--|
+| transcript | `…_transcripts.txt` | `…(A)_transcripts.txt` |
+| result | `…_result.json(Pass)(Attempt-1)` | `…_result(A).json(Pass)(Attempt-1)` |
+| day overall | `DayOVERALL_result.json` | `DayOVERALL(A)_result.json` |
+| Salesforce log | `…_sf_log(Attempt-N).json` | `…_sf_log(A)(Attempt-N).json` |
+
+A **video** → two transcripts → two genuine scorings (different transcript →
+potentially different verdict per engine). An **image/text** deliverable is
+scored **once** and saved as two copies of the identical verdict (one LLM cost).
+Attempt numbers, folder tagging, and day rollups are engine-scoped and never mix
+the two engines. Only Whisper is pushed to Salesforce.
+
+The trigger Lambda needs **no change**: `…_transcripts.txt` /
+`…(A)_transcripts.txt` both still end with `*_transcripts.txt` (→ two llm jobs),
+and `DayOVERALL(A)_result.json` still contains `overall` (→ ignored).
 
 ## Files
 - `llm_worker.py`     — the worker you run (multi-threaded SQS consumer)
@@ -48,6 +79,6 @@ python llm_worker.py
 ```
 
 ## Result files
-- `<deliverable>_result.json` — per deliverable (score, result, reasoning, positives, negatives)
-- `DayOVERALL_result.json`    — per day (overallScore, result, deliverables[], positives, negatives)
-- `CANDIDATE_OVERALL_result.json` — per candidate (rolls up all days)
+- Whisper:    `<deliverable>_result.json(<Pass|Fail>)(Attempt-N)` and `DayOVERALL_result.json` — original names, unchanged
+- AssemblyAI: `<deliverable>_result(A).json(<Pass|Fail>)(Attempt-N)` and `DayOVERALL(A)_result.json` — the only new files
+- `CANDIDATE_OVERALL_result.json` — DISABLED (per-candidate rollup is not written)

@@ -39,6 +39,12 @@ class LLMSettings:
     worker_threads:         int = _int("LLM_WORKER_THREADS", 4)
 
     openai_api_key: str = _str("OPENAI_API_KEY")
+    # AssemblyAI key is read here too (the LLM stage doesn't transcribe) ONLY to
+    # gate the (A) score-once/save-twice copies for image/text deliverables: when
+    # no key is configured the transcript stage produces no (A) transcripts, so
+    # the worker must likewise emit no (A) image/text copies — keeping "no key ⇒
+    # zero new files" true and the two stages consistent.
+    assemblyai_api_key: str = _str("ASSEMBLYAI_API_KEY")
     # gpt-5.x are reasoning models: the worker automatically sends
     # reasoning_effort instead of temperature for them (see llm_processor).
     openai_model:   str = _str("OPENAI_LLM_MODEL", "gpt-5.5")

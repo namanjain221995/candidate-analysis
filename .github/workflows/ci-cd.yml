@@ -64,12 +64,22 @@ jobs:
           script: |
             set -e
             cd /home/ec2-user/candidate-analysis
-            echo "==> Pulling latest code"
-            git pull origin main
+            echo "==> Fetching latest code"
+            # Force the server to match main. Unlike `git pull`, this never aborts
+            # on server-side edits to tracked files (e.g. *.service). Untracked files
+            # such as .env are left untouched.
+            git fetch origin main
+            git reset --hard origin/main
             echo "==> Installing dependencies"
             source venv/bin/activate
             pip install -q -r requirements.txt
             pip install -q -r requirements-llm.txt
+            echo "==> Installing systemd unit files"
+            # Copy the repo's unit files into place and reload so unit changes
+            # actually take effect (systemctl restart alone ignores unit edits).
+            sudo cp transcript-service.service /etc/systemd/system/transcript-service.service
+            sudo cp llm-service.service /etc/systemd/system/llm-service.service
+            sudo systemctl daemon-reload
             echo "==> Restarting services"
             sudo systemctl restart transcript-service
             sudo systemctl restart llm-service

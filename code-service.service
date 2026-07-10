@@ -1,0 +1,19 @@
+[Unit]
+Description=Candidate code-evaluation worker (SQS notebook-jobs + OpenAI)
+After=network-online.target
+Wants=network-online.target
+
+# NEW, ADDITIVE service. Runs alongside transcript-service and llm-service from the
+# same deploy folder and shares the same .env. Consumes the notebook-jobs queue fed
+# by the Router Lambda. NOTEBOOK_QUEUE_URL must be set in the shared .env.
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/home/ec2-user/candidate-analysis
+EnvironmentFile=/home/ec2-user/candidate-analysis/.env
+ExecStart=/home/ec2-user/candidate-analysis/venv/bin/python /home/ec2-user/candidate-analysis/code_worker.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

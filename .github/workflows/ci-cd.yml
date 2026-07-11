@@ -40,11 +40,13 @@ jobs:
           # dummy values so config modules that read env don't exit
           TRANSCRIPT_QUEUE_URL: "https://sqs.us-east-1.amazonaws.com/000000000000/transcript-jobs"
           LLM_QUEUE_URL: "https://sqs.us-east-1.amazonaws.com/000000000000/llm-jobs"
+          NOTEBOOK_QUEUE_URL: "https://sqs.us-east-1.amazonaws.com/000000000000/notebook-jobs"
           OPENAI_API_KEY: "sk-ci-dummy"
           AWS_DEFAULT_REGION: "us-east-1"
         run: |
           python -c "import engines, config, s3_store, transcriber, main"
           python -c "import llm_config, llm_s3, llm_processor, llm_overall, llm_worker"
+          python -c "import code_config, code_processor, code_worker"
           echo "imports OK"
 
   # ────────────────────────────────────────────────────────────
@@ -79,11 +81,14 @@ jobs:
             # actually take effect (systemctl restart alone ignores unit edits).
             sudo cp transcript-service.service /etc/systemd/system/transcript-service.service
             sudo cp llm-service.service /etc/systemd/system/llm-service.service
+            sudo cp code-service.service /etc/systemd/system/code-service.service
             sudo systemctl daemon-reload
             echo "==> Restarting services"
             sudo systemctl restart transcript-service
             sudo systemctl restart llm-service
+            sudo systemctl restart code-service
             echo "==> Status"
             sudo systemctl is-active transcript-service
             sudo systemctl is-active llm-service
+            sudo systemctl is-active code-service
             echo "==> Deploy complete"

@@ -5,13 +5,15 @@
 # Run ONCE on the EC2:  bash cicd_ec2_setup.sh
 set -euo pipefail
 
-echo "==> Allowing ec2-user to restart the two services without a password"
+echo "==> Allowing ec2-user to restart the three services without a password"
 SUDO_FILE=/etc/sudoers.d/candidate-analysis-deploy
 sudo tee "$SUDO_FILE" >/dev/null <<'EOF'
 ec2-user ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart transcript-service
 ec2-user ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart llm-service
+ec2-user ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart code-service
 ec2-user ALL=(ALL) NOPASSWD: /usr/bin/systemctl is-active transcript-service
 ec2-user ALL=(ALL) NOPASSWD: /usr/bin/systemctl is-active llm-service
+ec2-user ALL=(ALL) NOPASSWD: /usr/bin/systemctl is-active code-service
 EOF
 sudo chmod 440 "$SUDO_FILE"
 sudo visudo -c -f "$SUDO_FILE"

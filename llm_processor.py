@@ -9,6 +9,7 @@ Returns a parsed dict: {score, result, reasoning, positives, negatives}.
 """
 
 import base64
+import hashlib
 import json
 import re
 import time
@@ -22,6 +23,93 @@ from llm_config import LLMSettings
 OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions"
 _MAX_ATTEMPTS = 5
 _RETRYABLE = {408, 409, 429, 500, 502, 503, 504}
+
+
+# ── Deterministic-reproducibility cache ──────────────────────────────────────
+# Same model input (prompt + code/transcript + images + model + seed) → same
+# verdict, GUARANTEED, by storing the parsed result under a content hash in S3 and
+# returning it verbatim on a re-score. A fixed `seed` (added in evaluate) nudges
+# the model toward the same output even on a cache MISS, but the cache is what
+# actually guarantees "same input → same reasoning + score". Cache objects are
+# `<prefix><sha256>.json`; the `.json` suffix (not `_result.json`, not a media
+# extension) matches no trigger-Lambda route, so they never re-enter the pipeline.
+_S3_CLIENT = None
+
+
+def _s3_for(settings):
+    global _S3_CLIENT
+    if _S3_CLIENT is None:
+        import llm_s3
+        _S3_CLIENT = llm_s3.build_s3(settings)
+    return _S3_CLIENT
+
+
+def _cache_key(payload: dict) -> str:
+    canon = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(canon.encode("utf-8")).hexdigest()
+
+
+def _cache_object_key(settings, key: str) -> str:
+    prefix = getattr(settings, "llm_cache_prefix", "_llm_cache/")
+    return f"{prefix}{key}.json"
+
+
+def _cache_get(settings, key: str):
+    try:
+        s3 = _s3_for(settings)
+        obj = s3.get_object(Bucket=settings.bucket, Key=_cache_object_key(settings, key))
+        return json.loads(obj["Body"].read().decode("utf-8"))
+    except Exception:
+        return None  # miss (including NoSuchKey) — score fresh
+
+
+def _cache_put(settings, key: str, result: dict) -> None:
+    try:
+        s3 = _s3_for(settings)
+        s3.put_object(
+            Bucket=settings.bucket, Key=_cache_object_key(settings, key),
+            Body=json.dumps(result, ensure_ascii=False).encode("utf-8"),
+            ContentType="application/json",
+        )
+    except Exception as exc:
+        print(f"[LLM-CACHE] store failed (non-fatal): {exc}")
+
+
+def _post_with_retries(client: requests.Session, payload: dict) -> dict:
+    """POST to OpenAI with bounded backoff. If a model rejects `seed` (some
+    reasoning models do), drop it and retry immediately rather than fail the job —
+    the content-hash cache still gives exact reproducibility on resubmission."""
+    last_err = None
+    for attempt in range(_MAX_ATTEMPTS):
+        try:
+            resp = client.post(OPENAI_CHAT_URL, json=payload, timeout=300)
+        except (requests.Timeout, requests.ConnectionError) as exc:
+            last_err = exc
+            if attempt < _MAX_ATTEMPTS - 1:
+                time.sleep(min(60, 2 ** (attempt + 1)))
+                continue
+            raise
+
+        if resp.status_code == 200:
+            return _clean_json(resp.json()["choices"][0]["message"]["content"])
+
+        body = (resp.text or "")[:1000]
+        # A model that rejects `seed` (some reasoning models do) returns 400. Rather
+        # than risk a hard fail → DLQ, drop `seed` on ANY 400 while it is still set
+        # and retry once; if the 400 was for another reason it simply recurs (seed
+        # now gone) and then raises below. Costs at most one extra attempt.
+        if resp.status_code == 400 and "seed" in payload:
+            payload.pop("seed", None)
+            print("[LLM] 400 with seed set — retrying once without seed")
+            continue
+        if resp.status_code in _RETRYABLE and attempt < _MAX_ATTEMPTS - 1:
+            time.sleep(min(60, 2 ** (attempt + 1)))
+            continue
+        raise RuntimeError(f"OpenAI chat failed HTTP {resp.status_code}: {body}")
+
+    if last_err:
+        raise last_err
+    raise RuntimeError("OpenAI chat: exhausted retries")
 
 
 def load_prompt(settings: LLMSettings, prompt_file: str) -> str:
@@ -132,26 +220,25 @@ def evaluate(
     else:
         payload["temperature"] = 0
 
-    last_err = None
-    for attempt in range(_MAX_ATTEMPTS):
-        try:
-            resp = client.post(OPENAI_CHAT_URL, json=payload, timeout=300)
-        except (requests.Timeout, requests.ConnectionError) as exc:
-            last_err = exc
-            if attempt < _MAX_ATTEMPTS - 1:
-                time.sleep(min(60, 2 ** (attempt + 1)))
-                continue
-            raise
+    # Reproducibility: pin a seed (best-effort determinism on the API side; dropped
+    # automatically by _post_with_retries if the model rejects it) so identical
+    # input tends to the same output even on a cache miss.
+    seed = getattr(settings, "openai_seed", None)
+    if seed is not None:
+        payload["seed"] = seed
 
-        if resp.status_code == 200:
-            return _clean_json(resp.json()["choices"][0]["message"]["content"])
+    # Content-hash cache: identical input → identical verdict, GUARANTEED. The key
+    # covers the full payload (prompt + code/transcript + images + model + params +
+    # seed), so any change to the submission or the rubric misses and re-scores.
+    cache_key = _cache_key(payload) if getattr(settings, "llm_cache_enabled", False) else None
+    if cache_key:
+        hit = _cache_get(settings, cache_key)
+        if hit is not None:
+            print(f"[LLM-CACHE] hit {cache_key[:12]} → reusing identical result")
+            return hit
 
-        body = (resp.text or "")[:1000]
-        if resp.status_code in _RETRYABLE and attempt < _MAX_ATTEMPTS - 1:
-            time.sleep(min(60, 2 ** (attempt + 1)))
-            continue
-        raise RuntimeError(f"OpenAI chat failed HTTP {resp.status_code}: {body}")
+    result = _post_with_retries(client, payload)
 
-    if last_err:
-        raise last_err
-    raise RuntimeError("OpenAI chat: exhausted retries")
+    if cache_key:
+        _cache_put(settings, cache_key, result)
+    return result

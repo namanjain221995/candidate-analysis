@@ -66,6 +66,15 @@ class CodeSettings:
     # reasoning than the rubric-math LLM stage, so default 'medium'.
     openai_reasoning_effort: str = _str("OPENAI_CODE_REASONING_EFFORT", "medium")
 
+    # ── Deterministic scoring (same code → same verdict) ──────────────────────
+    # Read straight by llm_processor.evaluate (shared with the LLM stage): a fixed
+    # seed for best-effort determinism, plus a content-hash S3 cache that GUARANTEES
+    # an identical verdict when the same .ipynb/.py is re-scored. Own env knobs
+    # (fall back to the LLM-stage vars) so code grading can tune them independently.
+    openai_seed:       int  = _int("OPENAI_CODE_SEED", _int("OPENAI_SEED", 7))
+    llm_cache_enabled: bool = _bool("CODE_LLM_CACHE_ENABLED", _bool("LLM_CACHE_ENABLED", True))
+    llm_cache_prefix:  str  = _str("LLM_CACHE_PREFIX", "_llm_cache/")
+
     # ── Prompts / result naming (mirrors the LLM stage conventions) ───────────
     prompts_dir:   str = _str("PROMPTS_DIR", "prompts")
     # Day-wise coding-assignment rubric prompts live in their OWN folder, separate

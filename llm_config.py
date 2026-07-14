@@ -52,6 +52,16 @@ class LLMSettings:
     # "low" adds light reasoning for the rubric math. Default: low.
     openai_reasoning_effort: str = _str("OPENAI_REASONING_EFFORT", "low")
 
+    # ── Deterministic scoring (same input → same verdict) ─────────────────────
+    # openai_seed: a fixed request seed (best-effort determinism; auto-dropped if a
+    #   reasoning model rejects it — see llm_processor).
+    # llm_cache_enabled: content-hash result cache in S3 that GUARANTEES an
+    #   identical verdict when the same submission is re-scored. Cache objects live
+    #   under llm_cache_prefix (a '.json' suffix that matches no trigger route).
+    openai_seed:       int  = _int("OPENAI_SEED", 7)
+    llm_cache_enabled: bool = _bool("LLM_CACHE_ENABLED", True)
+    llm_cache_prefix:  str  = _str("LLM_CACHE_PREFIX", "_llm_cache/")
+
     transcript_suffix: str = _str("TRANSCRIPT_SUFFIX", "_transcripts.txt")
     result_suffix:     str = _str("LLM_RESULT_SUFFIX", "_result.json")
 

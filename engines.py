@@ -1,25 +1,22 @@
 """Transcription engine identifiers — shared by the transcript stage (main.py /
 transcriber.py) and the LLM stage (llm_worker.py / llm_overall.py).
 
-Two engines run in parallel on the SAME source audio for every video deliverable:
+PRODUCTION ENGINE: AssemblyAI. Every new video is transcribed by AssemblyAI ONLY;
+its results are scored, pushed to Salesforce, and stored in S3. AssemblyAI is now
+UNTAGGED, so it keeps the clean original naming:
 
-  Whisper      — the production path: scored, pushed to Salesforce, stored in S3.
-                 Its files carry NO engine tag, so they keep the ORIGINAL naming
-                 convention exactly (byte-identical to before AssemblyAI existed).
-  (A) AssemblyAI — the A/B comparison path: scored and stored in S3 ONLY, never
-                 pushed to Salesforce. Its files carry the "(A)" tag.
+  transcript:  <stem>_transcripts.txt
+  result:      <name>_<id>_result.json(...)
+  day overall: DayOVERALL_result.json
+  sf log:      <name>_<id>_sf_log(...).json
 
-Only AssemblyAI is tagged — so "no tag = Whisper, (A) = AssemblyAI". The tag
-lives in the FILENAME only; folders, prefixes, and metadata.json are untouched:
+Whisper is RETIRED. Its code remains (dormant, for easy rollback) but it never
+runs — configured_engines() returns AssemblyAI only — so the OpenAI/Whisper
+transcription endpoint is never called and its billing drops to zero. (The OpenAI
+key is still used by the LLM SCORING stage; that is a separate concern.)
 
-  transcript:  <stem>_transcripts.txt          <stem>(A)_transcripts.txt
-  result:      <name>_<id>_result.json(...)    <name>_<id>_result(A).json(...)
-  day overall: DayOVERALL_result.json          DayOVERALL(A)_result.json
-  sf log:      <name>_<id>_sf_log(...).json    <name>_<id>_sf_log(A)(...).json
-
-Leaving Whisper untagged guarantees the production path (filenames + Salesforce
-payload) is byte-identical to the original pipeline. This module is the single
-source of truth for these identifiers so the two stages can never drift apart.
+This module is the single source of truth for these identifiers so the two stages
+can never drift apart.
 """
 
 import os
@@ -28,51 +25,46 @@ WHISPER = "W"
 ASSEMBLYAI = "A"
 
 # The production engine — the ONLY engine whose per-deliverable results are
-# pushed to Salesforce. Everything else is stored in S3 only.
-SF_ENGINE = WHISPER
+# pushed to Salesforce. Everything else is stored in S3 only. AssemblyAI now
+# holds this role (was Whisper).
+SF_ENGINE = ASSEMBLYAI
 
-# Engine assumed for a legacy/untagged transcript (a *_transcripts.txt written
-# before engine tagging existed). Keeps old artifacts flowing as Whisper.
-DEFAULT_ENGINE = WHISPER
+# Engine assumed for an untagged transcript. AssemblyAI is now untagged, so a
+# plain *_transcripts.txt maps to AssemblyAI (as does any legacy untagged file).
+DEFAULT_ENGINE = ASSEMBLYAI
 
 _ALL = (WHISPER, ASSEMBLYAI)
 
 
 def configured_engines():
-    """Ordered list of engines to run, from TRANSCRIPTION_ENGINES (default 'W,A').
-
-    Whisper is always present and always first, so the production path is never
-    silently dropped and always runs (and becomes durable) before AssemblyAI.
+    """The engines to run. AssemblyAI is now the SOLE production engine; Whisper is
+    retired and never runs, so the OpenAI/Whisper transcription endpoint is never
+    hit. TRANSCRIPTION_ENGINES is deliberately NOT consulted — a stale 'W,A' left
+    in the environment must never silently re-enable Whisper. To bring Whisper back
+    (rollback), return it here explicitly.
     """
-    raw = os.getenv("TRANSCRIPTION_ENGINES") or "W,A"
-    out = []
-    for tok in raw.replace(";", ",").split(","):
-        t = tok.strip().upper()
-        if t and t in _ALL and t not in out:
-            out.append(t)
-    # Whisper (production) is ALWAYS present and ALWAYS first — never silently
-    # dropped, even if TRANSCRIPTION_ENGINES omits it or is mis-set (e.g. "A").
-    return [WHISPER] + [e for e in out if e != WHISPER]
+    return [ASSEMBLYAI]
 
 
 def engine_tag(engine: str) -> str:
     """The literal label inserted into filenames.
 
-    Whisper is UNTAGGED (empty string) so production keeps the original naming;
-    only AssemblyAI is tagged:  engine_tag('W') -> '',  engine_tag('A') -> '(A)'.
+    AssemblyAI (production) is now UNTAGGED (empty string) so it keeps the clean
+    original naming; a retired-Whisper file — if one were ever produced — would be
+    tagged '(W)':  engine_tag('A') -> '',  engine_tag('W') -> '(W)'.
     """
-    return "" if engine == WHISPER else f"({engine})"
+    return "" if engine == ASSEMBLYAI else f"({engine})"
 
 
 def split_engine_tag(stem: str):
-    """('...(A)') -> ('A', '...');  anything else -> (None, '...').
+    """('...(W)') -> ('W', '...');  anything else -> (None, '...').
 
-    Only AssemblyAI carries a tag, so a stem ending in '(A)' is AssemblyAI and
-    everything else is Whisper (the caller maps None -> DEFAULT_ENGINE). A
-    Salesforce id is 15-18 chars and ends like '...vMAC)', never '(A)', so an id
-    in parentheses (e.g. '...(a1UO1000002Rd0vMAC)') is left intact.
+    AssemblyAI (production) is untagged, so an untagged stem is AssemblyAI (the
+    caller maps None -> DEFAULT_ENGINE = AssemblyAI). Only a retired-Whisper file
+    would carry a '(W)' tag. A Salesforce id is 15-18 chars and ends like
+    '...vMAC)', never '(W)', so an id in parentheses is left intact.
     """
-    suffix = f"({ASSEMBLYAI})"   # "(A)"
+    suffix = f"({WHISPER})"   # "(W)"
     if stem.endswith(suffix):
-        return ASSEMBLYAI, stem[: -len(suffix)]
+        return WHISPER, stem[: -len(suffix)]
     return None, stem

@@ -82,11 +82,17 @@ class Settings:
     verbatim_mode: bool = _bool("VERBATIM_MODE", default=True)
 
     def validate(self) -> None:
+        # AssemblyAI is the sole transcription engine, so the transcript service
+        # requires ASSEMBLYAI_API_KEY. It NO LONGER requires OPENAI_API_KEY —
+        # Whisper is retired and OpenAI is never called for transcription — so
+        # stopping the OpenAI/Whisper billing (or dropping that key from this
+        # service's env) can't crash the worker. (The LLM scoring service keeps
+        # its own OPENAI_API_KEY requirement in llm_config.py.)
         missing = []
         if not self.transcript_queue_url:
             missing.append("TRANSCRIPT_QUEUE_URL")
-        if not self.openai_api_key:
-            missing.append("OPENAI_API_KEY")
+        if not self.assemblyai_api_key:
+            missing.append("ASSEMBLYAI_API_KEY")
         if missing:
             raise SystemExit(f"[CONFIG] missing required env vars: {', '.join(missing)}")
 

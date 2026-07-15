@@ -809,13 +809,23 @@ def transcribe_assemblyai_from_mp3(settings: Settings, mp3_path: Path) -> Tuple[
 
 def transcribe_engine(
     settings: Settings,
-    whisper_client: requests.Session,
     engine: str,
     mp3_path: Path,
+    whisper_client: Optional[requests.Session] = None,
 ) -> Tuple[str, float]:
-    """Dispatch a single engine over the SHARED extracted mp3."""
-    if engine == engines.WHISPER:
-        return transcribe_whisper_from_mp3(settings, whisper_client, mp3_path)
+    """Dispatch a single engine over the SHARED extracted mp3.
+
+    AssemblyAI is the production engine and needs NO client (each REST call is
+    stateless). Whisper is retired: it only runs if a caller explicitly passes a
+    whisper_client (the dormant rollback path); without one it raises rather than
+    silently calling OpenAI.
+    """
     if engine == engines.ASSEMBLYAI:
         return transcribe_assemblyai_from_mp3(settings, mp3_path)
+    if engine == engines.WHISPER:
+        if whisper_client is None:
+            raise NonRetryableTranscriptionError(
+                "Whisper is retired: no OpenAI client is configured for transcription."
+            )
+        return transcribe_whisper_from_mp3(settings, whisper_client, mp3_path)
     raise NonRetryableTranscriptionError(f"unknown transcription engine: {engine!r}")

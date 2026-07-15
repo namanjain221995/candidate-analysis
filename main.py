@@ -32,7 +32,6 @@ from config import SETTINGS
 import s3_store
 from transcriber import (
     NonRetryableTranscriptionError,
-    create_openai_client,
     ensure_ffmpeg,
     prepare_audio,
     safe_local_filename,
@@ -69,7 +68,7 @@ def _pending_engines(s3, bucket: str, video_key: str, video_name: str):
     return pending
 
 
-def _handle_message(sqs, s3, client, body: dict) -> None:
+def _handle_message(sqs, s3, body: dict) -> None:
     bucket    = body["bucket"]
     video_key = body["video_key"]
     video_name = video_key.rsplit("/", 1)[-1]
@@ -101,7 +100,7 @@ def _handle_message(sqs, s3, client, body: dict) -> None:
             if mp3_path is None:
                 content, audio_seconds = "", 0.0
             else:
-                content, audio_seconds = transcribe_engine(SETTINGS, client, engine, mp3_path)
+                content, audio_seconds = transcribe_engine(SETTINGS, engine, mp3_path)
 
             print(f"[UP] ({engine}) s3://{bucket}/{transcript_key}")
             s3_store.upload_text(s3, bucket, transcript_key, content)
@@ -113,7 +112,8 @@ def _handle_message(sqs, s3, client, body: dict) -> None:
 def _worker_loop(worker_no: int) -> None:
     sqs = boto3.client("sqs", region_name=SETTINGS.aws_region)
     s3  = s3_store.build_s3_client(SETTINGS)
-    client = create_openai_client(SETTINGS)
+    # No OpenAI client is created: Whisper is retired, so the transcript worker
+    # never touches OpenAI. AssemblyAI needs no long-lived client (stateless REST).
     print(f"[WORKER {worker_no}] started")
 
     while not _stop.is_set():
@@ -137,7 +137,7 @@ def _worker_loop(worker_no: int) -> None:
         receipt = msg["ReceiptHandle"]
         try:
             body = json.loads(msg["Body"])
-            _handle_message(sqs, s3, client, body)
+            _handle_message(sqs, s3, body)
             sqs.delete_message(QueueUrl=SETTINGS.transcript_queue_url, ReceiptHandle=receipt)
 
         except NonRetryableTranscriptionError as exc:
@@ -146,11 +146,6 @@ def _worker_loop(worker_no: int) -> None:
 
         except Exception as exc:
             print(f"[WORKER {worker_no}][ERROR] {exc}  (will retry via SQS)")
-            try:
-                client.close()
-            except Exception:
-                pass
-            client = create_openai_client(SETTINGS)
             time.sleep(SETTINGS.failure_sleep_seconds)
 
     print(f"[WORKER {worker_no}] stopped")
@@ -169,17 +164,13 @@ def main() -> None:
     ensure_ffmpeg(SETTINGS)
     _install_signal_handlers()
 
-    active = engines.configured_engines()
-    if engines.ASSEMBLYAI in active and not SETTINGS.assemblyai_api_key:
-        active = [e for e in active if e != engines.ASSEMBLYAI]
-        print("[MAIN] ASSEMBLYAI_API_KEY not set — running Whisper-only")
+    active = engines.configured_engines()   # [ASSEMBLYAI] — Whisper retired
 
     print(f"[MAIN] bucket={SETTINGS.bucket}")
     print(f"[MAIN] queue={SETTINGS.transcript_queue_url}")
-    print(f"[MAIN] threads={SETTINGS.worker_threads}  model={SETTINGS.openai_whisper_model}")
-    print(f"[MAIN] engines={','.join(active)}"
-          + (f"  assemblyai_models={SETTINGS.assemblyai_speech_models}"
-             if engines.ASSEMBLYAI in active else ""))
+    print(f"[MAIN] threads={SETTINGS.worker_threads}")
+    print(f"[MAIN] engines={','.join(active)}  "
+          f"assemblyai_models={SETTINGS.assemblyai_speech_models}")
 
     threads = []
     for i in range(SETTINGS.worker_threads):

@@ -1,5 +1,5 @@
 [Unit]
-Description=Candidate transcript worker (SQS + Whisper)
+Description=Candidate transcript worker (SQS + AssemblyAI)
 After=network-online.target
 Wants=network-online.target
 

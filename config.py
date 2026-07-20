@@ -49,14 +49,15 @@ class Settings:
     # The model and verbatim settings are PINNED here so a provider-side default
     # change can never silently skew the Whisper-vs-AssemblyAI comparison.
     assemblyai_api_key:       str  = _str("ASSEMBLYAI_API_KEY")
-    # Speech models in PRIORITY order (comma-separated). AssemblyAI routes to the
-    # first supported model and AUTOMATICALLY FALLS BACK to the next, so
-    # "universal-3-pro,universal-2" uses Universal-3 Pro (newest/best, English-
-    # capable) and falls back to Universal-2 otherwise — this is AssemblyAI's own
-    # default. Sent as the `speech_models` array (the singular `speech_model` is
-    # deprecated). To try a newer model later (e.g. universal-3-5-pro) just change
-    # this env var — no code change. Leave blank to let AssemblyAI pick its default.
-    assemblyai_speech_models: str  = _str("ASSEMBLYAI_SPEECH_MODELS", "universal-3-pro,universal-2")
+    # Speech model(s) for AssemblyAI (comma-separated, priority order). PIN A
+    # CURRENTLY-SUPPORTED MODEL: AssemblyAI 400-rejects the WHOLE request if any
+    # listed model is deprecated — the priority list only falls back across
+    # LANGUAGE support, NOT across dead models. 'universal-3-pro' was retired in
+    # 2026 and that broke all transcription; 'universal-2' is the safe, supported
+    # default. To adopt a newer model (e.g. universal-3-5-pro) set
+    # ASSEMBLYAI_SPEECH_MODELS in the env AFTER confirming the exact model id, and
+    # keep universal-2 as the trailing fallback.
+    assemblyai_speech_models: str  = _str("ASSEMBLYAI_SPEECH_MODELS", "universal-2")
     # Verbatim: keep fillers / false starts / disfluencies so (A) matches
     # Whisper's VERBATIM_MODE and the comparison is fair.
     assemblyai_disfluencies:  bool = _bool("ASSEMBLYAI_DISFLUENCIES", True)

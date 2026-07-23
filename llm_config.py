@@ -71,6 +71,16 @@ class LLMSettings:
     pass_marker: str = _str("LLM_PASS_MARKER", "(Pass)")
     fail_marker: str = _str("LLM_FAIL_MARKER", "(Fail)")
 
+    # ── Link deliverables (Github/Kaggle .txt link submissions) ───────────────
+    # Link submissions are NOT graded. When a candidate uploads a link, the worker
+    # ACKNOWLEDGES it to Salesforce so the record leaves "Pending". The Apex only
+    # accepts Pass/Fail, so links are reported as PASS (change LINK_RESULT if the
+    # endpoint later gains a real "Submitted" status). A deliverable counts as a
+    # "link" when its folder name contains any LINK_KEYWORDS substring (comma-sep).
+    link_submission_enabled: bool = _bool("LINK_SUBMISSION_ENABLED", True)
+    link_result:             str  = _str("LINK_RESULT", "PASS")
+    link_keywords:           str  = _str("LINK_KEYWORDS", "github link,kaggle link")
+
     prompts_dir: str = _str("PROMPTS_DIR", "prompts")
     pdf_dir:     str = _str("PDF_DIR", "pdf")
 

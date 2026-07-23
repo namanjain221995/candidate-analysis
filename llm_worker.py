@@ -524,6 +524,101 @@ def _handle_image_text(s3, client, fname, deliverable_prefix, deliverable_name):
         )
 
 
+# ── Link-submission acknowledgment (Github/Kaggle .txt link deliverables) ──────
+
+def _link_keywords():
+    return [k.strip().lower() for k in (LLM_SETTINGS.link_keywords or "").split(",") if k.strip()]
+
+
+def _is_link_deliverable(deliverable_name: str) -> bool:
+    """True for a Github/Kaggle LINK deliverable (matched by folder-name keyword)."""
+    n = (deliverable_name or "").lower()
+    return any(k in n for k in _link_keywords())
+
+
+def _link_attempt_number(s3, deliverable_prefix) -> int:
+    """Attempt = already-acknowledged link submissions in this folder + 1. Each
+    acknowledged submission's .txt is tagged with the pass/fail marker, so counting
+    tagged files (this folder level only) gives the prior attempts."""
+    n = 0
+    for k in llm_s3.list_prefix(s3, LLM_SETTINGS.bucket, deliverable_prefix):
+        rel = k[len(deliverable_prefix):]
+        if "/" in rel:
+            continue
+        if LLM_SETTINGS.pass_marker in rel or LLM_SETTINGS.fail_marker in rel:
+            n += 1
+    return n + 1
+
+
+def _handle_link_submission(s3, key, deliverable_prefix, deliverable_name):
+    """Acknowledge a Github/Kaggle LINK submission WITHOUT grading it: POST a fixed
+    result (default PASS) to the SAME Salesforce endpoint graded results use, then
+    tag the .txt with the attempt so S3 reflects it and it is never re-processed.
+    Each resubmission (a new .txt with a new id) increments the attempt."""
+    fname = key.rsplit("/", 1)[-1]
+
+    # Duplicate-delivery guard: if the .txt is already gone (renamed/tagged by a
+    # prior run), skip — never push a duplicate Salesforce record for it.
+    try:
+        s3.head_object(Bucket=LLM_SETTINGS.bucket, Key=key)
+    except Exception:
+        print(f"[LINK] {key} no longer present (already acknowledged?) — skipping")
+        return
+
+    try:
+        link_url = (llm_s3.read_text(s3, LLM_SETTINGS.bucket, key) or "").strip()
+    except Exception as exc:
+        print(f"[LINK] could not read {key}: {exc}")
+        link_url = ""
+
+    result_id = Path(fname).stem
+    deliverable_result_id = (_sf_id_from_name(result_id)
+                             or _sf_id_from_name(deliverable_name)
+                             or result_id)
+    attempt = _link_attempt_number(s3, deliverable_prefix)
+    verdict = (LLM_SETTINGS.link_result or "PASS")
+
+    # SAME body shape graded results use — just not graded (score=None). The Apex
+    # reads deliverableResultId + result; the rest is context.
+    record = {
+        "deliverableResultId": deliverable_result_id,
+        "result": verdict,
+        "attempt": attempt,
+        "link": link_url,
+        "deliverable": deliverable_name,
+        "score": None,
+        "reasoning": "Link submission received.",
+        "positives": [],
+        "negatives": [],
+    }
+    sf_log = salesforce.notify(LLM_SETTINGS, record)
+    print(f"[LINK] {deliverable_name} attempt {attempt} -> SF result={verdict} "
+          f"(success={sf_log.get('success')})")
+
+    # Tag the .txt with the marker + attempt (tag sits AFTER the extension so the
+    # router never re-triggers it; counting these gives the next attempt number).
+    base_marker = LLM_SETTINGS.fail_marker if str(verdict).upper() == "FAIL" else LLM_SETTINGS.pass_marker
+    marker = f"{base_marker}(Attempt-{attempt})"
+    new_key = key + marker
+    try:
+        s3.copy_object(Bucket=LLM_SETTINGS.bucket,
+                       CopySource={"Bucket": LLM_SETTINGS.bucket, "Key": key},
+                       Key=new_key)
+        s3.delete_object(Bucket=LLM_SETTINGS.bucket, Key=key)
+        print(f"[LINK] tagged {new_key}")
+    except Exception as exc:
+        print(f"[LINK] tag failed for {key}: {exc}")
+
+    # Persist the Salesforce log beside it (plain .json — ignored by the router).
+    try:
+        log_key = f"{deliverable_prefix}{result_id}_sf_log(Attempt-{attempt}).json"
+        s3.put_object(Bucket=LLM_SETTINGS.bucket, Key=log_key,
+                      Body=json.dumps(sf_log, indent=2, default=str).encode("utf-8"),
+                      ContentType="application/json")
+    except Exception as exc:
+        print(f"[LINK] sf_log write failed: {exc}")
+
+
 def _handle(s3, client, body: dict):
     kind = body.get("kind", "transcript")
     key = body["key"]
@@ -539,6 +634,14 @@ def _handle(s3, client, body: dict):
     fname = key.rsplit("/", 1)[-1]
     if LLM_SETTINGS.pass_marker in fname or LLM_SETTINGS.fail_marker in fname:
         print(f"[SKIP] already-tagged file: {fname}")
+        return
+
+    # Github/Kaggle LINK submissions (a .txt holding a URL) are NOT graded — they
+    # are just acknowledged to Salesforce (result=PASS) and attempt-tagged in S3.
+    # Handle here, before the normal image/text routing below.
+    if (kind == "text" and LLM_SETTINGS.link_submission_enabled
+            and _is_link_deliverable(deliverable_name)):
+        _handle_link_submission(s3, key, deliverable_prefix, deliverable_name)
         return
 
     # An image/text is scored standalone ONLY when its deliverable rule asks for

@@ -136,6 +136,47 @@ def _bad_submission_result(reason: str) -> dict:
     }
 
 
+# ── verdict guard: keep score/result honest ─────────────────────────────────────
+# The model occasionally stamps the summary `score`/`result` fields with a value
+# that contradicts the rubric it actually computed — it can commit those two fields
+# before it finishes reasoning (e.g. a perfect notebook whose fields read 0/FAIL
+# while the reasoning adds up to 100/PASS). The rubric's own total, printed as the
+# final "Final score: N/100" line of `reasoning`, is authoritative. Trust that
+# number, then derive PASS/FAIL purely from the 70 threshold so the two summary
+# fields can never disagree with the analysis or with each other.
+_PASS_THRESHOLD = 70
+
+
+def _authoritative_score(reasoning: str):
+    """The score the rubric actually computed, read from the tail of `reasoning`.
+    Tolerates the clean 'Final score: N/100' wording and the older '= N -> ...' /
+    'final N' phrasings. Returns None if nothing parseable is present."""
+    text = reasoning or ""
+    for pat in (r"final score:\s*(\d{1,3})\s*/\s*100",       # new clean wording
+                r"=\s*(\d{1,3})\s*->\s*(?:final|pass|fail)",  # legacy "= 100 -> PASS"
+                r"final\s+(\d{1,3})\b"):                      # legacy "-> final 100"
+        m = re.search(pat, text, re.IGNORECASE)
+        if m:
+            return max(0, min(100, int(m.group(1))))
+    return None
+
+
+def _enforce_verdict(result: dict) -> dict:
+    """Reconcile score/result before the result is stored or sent to Salesforce."""
+    score = result.get("score")
+    computed = _authoritative_score(result.get("reasoning") or "")
+    if computed is not None and computed != score:
+        print(f"[VERDICT-FIX] summary score {score!r} contradicted the rubric total "
+              f"{computed}; using {computed}")
+        score = computed
+    if not isinstance(score, int):
+        score = 0
+    score = max(0, min(100, score))
+    result["score"] = score
+    result["result"] = "PASS" if score >= _PASS_THRESHOLD else "FAIL"
+    return result
+
+
 # ── grade one submission ────────────────────────────────────────────────────────
 
 def _grade(client, *, kind: str, deliverable_name: str, prompt_file: str, content: str, images):
@@ -160,7 +201,7 @@ def _grade(client, *, kind: str, deliverable_name: str, prompt_file: str, conten
         image_data_urls=images or None,
     )
     result["deliverable"] = deliverable_name
-    return result
+    return _enforce_verdict(result)
 
 
 # ── persist result + tag + Salesforce ───────────────────────────────────────────

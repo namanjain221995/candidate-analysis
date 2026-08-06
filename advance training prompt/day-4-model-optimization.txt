@@ -510,8 +510,9 @@ REQUIRED INTERNAL STRUCTURE OF EACH FIELD - follow exactly.
      (low/medium/high) + whether a TOTAL cap was applied; or "no integrity concerns". Any UNVERIFIED
      suspicion goes here, labelled and unscored.
 
-  7. TOTAL: "<rb1>+<rb2>+<rb3>+<rb4>+<rb5>+<rb6> = <sum>", then any TOTAL cap applied, then
-     "-> final <score> -> PASS (>=70)" or "-> FAIL (<70)".
+  7. FINAL: show "<rb1>+<rb2>+<rb3>+<rb4>+<rb5>+<rb6> = <sum>" and name any TOTAL cap you
+     applied (with the capped number). Then end with EXACTLY this line, nothing after it:
+     "Final score: <score>/100 - PASS"  (write PASS when score >= 70, otherwise FAIL).
 
 "positives" - array of strings, each in this exact shape:
   "<specific strength> | Proof: [<citation>] \"<verbatim quote from the submission>\""

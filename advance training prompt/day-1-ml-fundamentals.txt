@@ -217,7 +217,8 @@ REQUIRED INTERNAL STRUCTURE OF EACH FIELD — follow exactly:
      [O4: 'Age 0, Fare 0'], full credit for checking").
   5. INTEGRITY: flags with citation + quote + confidence (low/medium/high) + whether the 40-point cap
      was applied; or "no integrity concerns". Any UNVERIFIED suspicion goes here, labelled and unscored.
-  6. TOTAL: "<r1>+<r2>+<r3>+<r4>+<r5>+<r6> = <score> -> PASS (>=70)" or "-> FAIL (<70)".
+  6. FINAL: show "<r1>+<r2>+<r3>+<r4>+<r5>+<r6> = <score>", then end with EXACTLY this line,
+     nothing after it: "Final score: <score>/100 - PASS"  (write PASS when score >= 70, otherwise FAIL).
 
 "positives" — array of strings, each in this exact shape:
   "<specific strength> | Proof: [<citation>] \"<verbatim quote from the submission>\""

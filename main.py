@@ -174,7 +174,7 @@ def main() -> None:
 
     threads = []
     for i in range(SETTINGS.worker_threads):
-        t = threading.Thread(target=_worker_loop, args=(i + 1,), daemon=True)
+        t = threading.Thread(target=_worker_loop, args=(i + 1,))
         t.start()
         threads.append(t)
 

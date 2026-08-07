@@ -15,6 +15,10 @@ EnvironmentFile=/home/ec2-user/candidate-analysis/.env
 ExecStart=/home/ec2-user/candidate-analysis/venv/bin/python /home/ec2-user/candidate-analysis/main.py
 Restart=always
 RestartSec=5
+# Graceful shutdown: give the worker time to finish the video it is transcribing
+# on stop before systemd force-kills it (transcription can take a few minutes),
+# so a deploy/restart never abandons an in-flight job.
+TimeoutStopSec=600
 
 [Install]
 WantedBy=multi-user.target

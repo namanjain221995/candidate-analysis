@@ -33,12 +33,19 @@ Usage (run from the repo folder so .env loads):
   python retrigger_missing_transcripts.py --links            # DRY RUN (link .txt)
   python retrigger_missing_transcripts.py --links --run      # acknowledge them
   python retrigger_missing_transcripts.py --links --run --via-s3
+  # sweep — SELF-HEALING: re-queue ANY deliverable missing its next artifact
+  #   (video->transcript, transcript->result, code->result) across ALL stages.
+  #   Grace-windowed (SWEEP_GRACE_MINUTES, default 15) so in-flight jobs are left
+  #   alone. Meant to run on a schedule (systemd timer / cron) in --run mode.
+  python retrigger_missing_transcripts.py --sweep            # DRY RUN (all stages)
+  python retrigger_missing_transcripts.py --sweep --run      # re-queue everything pending
 """
 
 import json
 import os
 import sys
 from collections import defaultdict
+from datetime import datetime, timezone, timedelta
 
 try:
     from dotenv import load_dotenv
@@ -60,6 +67,17 @@ FAIL_MARKER = os.environ.get("LLM_FAIL_MARKER", "(Fail)")
 LINK_KEYWORDS = [k.strip().lower() for k in
                  os.environ.get("LINK_KEYWORDS", "github link,kaggle link").split(",") if k.strip()]
 VIDEO_EXTS = (".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v", ".mpeg", ".mpg")
+# --sweep additions (self-healing reconciliation). CODE_EXTS + the code queue let
+# the sweep also cover ungraded notebooks/scripts; RESULT_MARKER is how it tells a
+# deliverable was already scored; SWEEP_GRACE_MINUTES is a safety window so a job
+# whose source file only just landed (still in flight) is never double-queued.
+CODE_EXTS = (".ipynb", ".py", ".pyw", ".ipy")
+RESULT_MARKER = os.environ.get("RESULT_SUFFIX", "_result.json")
+NOTEBOOK_QUEUE_URL = os.environ.get("NOTEBOOK_QUEUE_URL")
+try:
+    SWEEP_GRACE_MINUTES = int(os.environ.get("SWEEP_GRACE_MINUTES", "15"))
+except ValueError:
+    SWEEP_GRACE_MINUTES = 15
 
 # Match the app's S3 client (s3_store.build_s3_client): explicit region + SigV4, so
 # signing/region behaviour is identical to the running services.
@@ -68,6 +86,7 @@ _S3_CONFIG = Config(signature_version="s3v4", retries={"max_attempts": 8, "mode"
 RUN = "--run" in sys.argv
 VIA_S3 = "--via-s3" in sys.argv
 LINKS = "--links" in sys.argv
+SWEEP = "--sweep" in sys.argv
 LIMIT = None
 if "--limit" in sys.argv:
     try:
@@ -195,8 +214,119 @@ def _run_mode(s3, *, finder, noun, queue_url, queue_label, body_fn, watch_cmd):
     print(f"Watch progress:  {watch_cmd}")
 
 
+def _find_pending_for_sweep(s3):
+    """ONE bucket pass → (total, videos_missing_transcript, transcripts_missing_result,
+    code_missing_result).
+
+    - Only source files OLDER than SWEEP_GRACE_MINUTES are returned, so a job that
+      is still in flight (its file just landed) is never double-queued.
+    - Detection is per-folder and per-submission (stem match).
+    - Only UNTAGGED source files are considered: once a deliverable is scored, its
+      files end in a (Pass)/(Fail) marker (so they no longer end in a video ext /
+      _transcripts.txt / code ext) and are skipped automatically.
+    """
+    folders = defaultdict(dict)   # folder prefix -> {basename: LastModified}
+    total = 0
+    for page in s3.get_paginator("list_objects_v2").paginate(Bucket=BUCKET):
+        for obj in page.get("Contents", []):
+            key = obj["Key"]
+            total += 1
+            prefix, _, base = key.rpartition("/")
+            folders[(prefix + "/") if prefix else ""][base] = obj.get("LastModified")
+
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=SWEEP_GRACE_MINUTES)
+    videos, transcripts, code = [], [], []
+
+    for prefix, names in folders.items():
+        result_bases = [n for n in names if RESULT_MARKER in n]
+        for base, last_modified in names.items():
+            low = base.lower()
+            # inside the grace window → maybe still processing, leave it alone
+            if last_modified is not None and last_modified > cutoff:
+                continue
+
+            # 1) raw video with NO transcript beside it → needs transcription
+            if low.endswith(VIDEO_EXTS):
+                stem = base.rsplit(".", 1)[0]
+                t_plain = f"{stem}{TRANSCRIPT_SUFFIX}"
+                t_legacy = f"{stem}(A){TRANSCRIPT_SUFFIX}"
+                if not any(n.startswith(t_plain) or n.startswith(t_legacy) for n in names):
+                    videos.append(prefix + base)
+                continue
+
+            # 2) untagged transcript with NO result for its submission → needs scoring
+            if low.endswith(TRANSCRIPT_SUFFIX.lower()):
+                stem = base[: -len(TRANSCRIPT_SUFFIX)]
+                if not any(stem in rb for rb in result_bases):
+                    transcripts.append(prefix + base)
+                continue
+
+            # 3) untagged code file with NO result for its submission → needs grading
+            if low.endswith(CODE_EXTS):
+                stem = base.rsplit(".", 1)[0]
+                if not any(stem in rb for rb in result_bases):
+                    code.append(prefix + base)
+                continue
+
+    return total, sorted(videos), sorted(transcripts), sorted(code)
+
+
+def _run_sweep(s3):
+    """Self-healing reconciliation: re-queue every deliverable missing its next
+    artifact to the correct queue. Safe to run on a schedule — idempotent,
+    grace-windowed, and it only touches items still genuinely pending."""
+    if RUN:
+        missing = [lbl for lbl, url in (
+            ("transcript-jobs", TRANSCRIPT_QUEUE_URL),
+            ("llm-jobs", LLM_QUEUE_URL),
+            ("notebook-jobs", NOTEBOOK_QUEUE_URL)) if not url]
+        if missing:
+            sys.exit(f"[SWEEP] queue URL(s) not set in the environment: "
+                     f"{', '.join(missing)} (run from the candidate-analysis folder "
+                     f"so .env loads).")
+
+    total, videos, transcripts, code = _find_pending_for_sweep(s3)
+    print(f"[SWEEP] scanned {total} objects in s3://{BUCKET} "
+          f"(grace window {SWEEP_GRACE_MINUTES} min)")
+    print(f"[SWEEP] pending: {len(videos)} video->transcript, "
+          f"{len(transcripts)} transcript->result, {len(code)} code->result")
+    for k in videos:
+        print("  [video]     ", k)
+    for k in transcripts:
+        print("  [transcript]", k)
+    for k in code:
+        print("  [code]      ", k)
+
+    if LIMIT:
+        videos, transcripts, code = videos[:LIMIT], transcripts[:LIMIT], code[:LIMIT]
+
+    if not (videos or transcripts or code):
+        print("[SWEEP] nothing pending — pipeline is fully caught up.")
+        return
+    if not RUN:
+        print("\n[SWEEP] DRY RUN — nothing changed. Re-run with --run to re-queue.")
+        return
+
+    if videos:
+        _requeue_sqs(TRANSCRIPT_QUEUE_URL, "transcript (transcript-jobs)", videos,
+                     lambda k: {"bucket": BUCKET, "video_key": k})
+    if transcripts:
+        _requeue_sqs(LLM_QUEUE_URL, "LLM (llm-jobs)", transcripts,
+                     lambda k: {"bucket": BUCKET, "key": k, "kind": "transcript"})
+    if code:
+        _requeue_sqs(NOTEBOOK_QUEUE_URL, "code (notebook-jobs)", code,
+                     lambda k: {"bucket": BUCKET, "key": k,
+                                "kind": "notebook" if k.lower().endswith(".ipynb") else "python",
+                                "file_extension": "." + k.rsplit(".", 1)[-1].lower()})
+    print(f"\n[SWEEP] done — re-queued {len(videos)} video(s), "
+          f"{len(transcripts)} transcript(s), {len(code)} code file(s).")
+
+
 def main():
     s3 = boto3.client("s3", region_name=AWS_REGION, config=_S3_CONFIG)
+    if SWEEP:
+        _run_sweep(s3)
+        return
     if LINKS:
         _run_mode(
             s3,

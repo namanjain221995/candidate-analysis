@@ -11,6 +11,9 @@ EnvironmentFile=/home/ec2-user/candidate-analysis/.env
 ExecStart=/home/ec2-user/candidate-analysis/venv/bin/python /home/ec2-user/candidate-analysis/llm_worker.py
 Restart=always
 RestartSec=5
+# Graceful shutdown: give a worker time to finish its current job on stop before
+# systemd force-kills it, so a deploy/restart never abandons an in-flight job.
+TimeoutStopSec=300
 
 [Install]
 WantedBy=multi-user.target

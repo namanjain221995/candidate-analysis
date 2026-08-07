@@ -359,12 +359,19 @@ def main():
     print(f"[CODE-MAIN] bucket={CODE_SETTINGS.bucket} queue={CODE_SETTINGS.notebook_queue_url}")
     print(f"[CODE-MAIN] threads={CODE_SETTINGS.worker_threads} model={CODE_SETTINGS.openai_model} "
           f"sf_enabled={CODE_SETTINGS.sf_enabled}")
-    threads = [threading.Thread(target=_worker, args=(i + 1,), daemon=True)
+    threads = [threading.Thread(target=_worker, args=(i + 1,))
                for i in range(CODE_SETTINGS.worker_threads)]
     for t in threads:
         t.start()
     while not _stop.is_set():
         time.sleep(1)
+    # Graceful shutdown: on SIGTERM (deploy/restart) let each worker finish the
+    # notebook it is grading and delete it, instead of being force-killed mid-job
+    # (which would leave the deliverable with no result until re-queued).
+    print("[CODE-MAIN] stop requested — waiting for in-flight jobs to finish...")
+    for t in threads:
+        t.join(timeout=CODE_SETTINGS.sqs_visibility_timeout)
+    print("[CODE-MAIN] stopped")
 
 
 if __name__ == "__main__":

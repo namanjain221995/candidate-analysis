@@ -1,0 +1,11 @@
+[Unit]
+Description=Self-healing sweep - re-queue any deliverable missing its next artifact
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ec2-user
+WorkingDirectory=/home/ec2-user/candidate-analysis
+# Loads .env via python-dotenv inside the script; re-queues anything pending.
+ExecStart=/home/ec2-user/candidate-analysis/venv/bin/python /home/ec2-user/candidate-analysis/retrigger_missing_transcripts.py --sweep --run

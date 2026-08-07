@@ -703,12 +703,19 @@ def main():
     signal.signal(signal.SIGTERM, lambda *a: _stop.set())
     print(f"[LLM-MAIN] bucket={LLM_SETTINGS.bucket} queue={LLM_SETTINGS.llm_queue_url}")
     print(f"[LLM-MAIN] threads={LLM_SETTINGS.worker_threads} model={LLM_SETTINGS.openai_model}")
-    threads = [threading.Thread(target=_worker, args=(i + 1,), daemon=True)
+    threads = [threading.Thread(target=_worker, args=(i + 1,))
                for i in range(LLM_SETTINGS.worker_threads)]
     for t in threads:
         t.start()
     while not _stop.is_set():
         time.sleep(1)
+    # Graceful shutdown: on SIGTERM (deploy/restart) let each worker finish the
+    # message it is scoring and delete it, instead of being force-killed mid-job
+    # (which would leave the deliverable with no result until re-queued).
+    print("[LLM-MAIN] stop requested — waiting for in-flight jobs to finish...")
+    for t in threads:
+        t.join(timeout=LLM_SETTINGS.sqs_visibility_timeout)
+    print("[LLM-MAIN] stopped")
 
 
 if __name__ == "__main__":

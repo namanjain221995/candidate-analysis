@@ -53,7 +53,7 @@ Never evaluate more than one mode in a single run.
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────────────────────────
 
-The candidate's resume will belong to EXACTLY ONE of the following 11 supported niches.
+The candidate's resume will belong to EXACTLY ONE of the following 13 supported niches.
 You MUST identify the candidate's niche from the resume before evaluating.
 The JD may target the same or an adjacent niche.
 You MUST NOT invent niches outside the list.
@@ -70,10 +70,12 @@ Authoritative Niche List:
 9)  Supply Chain Manager/Analyst  (Planning / procurement / logistics / inventory)
 10) Business Analyst    (Requirements, process analysis, stakeholder alignment)
 11) Quality Assurance Engineer    (Manual + automation testing, test strategy, defect mgmt)
+12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
+13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
-  Quality Assurance Engineer
+  Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
   Supply Chain Manager/Analyst, Business Analyst
 
@@ -82,6 +84,12 @@ Niche-Aware JD Mapping Expectations (MODE V):
   mapping, system ownership, tooling, architecture responsibility, scale/perf metrics.
   - Quality Assurance Engineer: alignment via test strategy, automation frameworks,
     CI integration, defect management, and quality metrics (coverage, leakage).
+  - Design Verification: alignment via verification methodology (SystemVerilog/UVM),
+    testbench and coverage ownership, protocols verified (AXI, PCIe, Ethernet, SerDes),
+    regression automation, and sign-off metrics (coverage closure, bugs found pre-silicon).
+  - DevOps: alignment via CI/CD ownership, Infrastructure as Code, containers and
+    orchestration (Docker, Kubernetes/EKS), cloud platform scope, observability,
+    and delivery/reliability metrics (deployment frequency, lead time, MTTR, uptime).
 - For NON-TECHNICAL candidates:
   - Financial Analyst: alignment via domain (FP&A, valuation, audit), financial tools
     (Excel, Power BI, SAP, Bloomberg), and quantifiable financial outcomes.

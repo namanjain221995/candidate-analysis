@@ -70,10 +70,13 @@ Authoritative Niche List:
 9) Supply Chain Manager/Analyst — Planning / procurement / logistics / inventory
 10) Business Analyst — Requirements, process analysis, stakeholder alignment
 11) Quality Assurance Engineer — Manual + automation testing, test strategy, defect management
+12) Design Verification — ASIC / SoC functional verification: SystemVerilog, UVM, coverage, assertions
+13) DevOps — CI/CD, cloud infrastructure, containers, orchestration, monitoring
 
 Niche Categories:
 - TECHNICAL:
-  Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer, Quality Assurance Engineer
+  Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer, Quality Assurance Engineer,
+  Design Verification, DevOps
 
 - NON-TECHNICAL / SEMI-TECHNICAL:
   Financial Analyst, Product Manager, Project Manager, Supply Chain Manager/Analyst, Business Analyst
@@ -96,6 +99,8 @@ Niche-Specific Expectations When Relevant:
 - Software Engineer: expect backend/platform/services experience, coding, debugging, architecture, system design, production issues, and trade-offs only when the question asks for technical depth.
 - Python Developer: expect Python scripting/backend/data engineering/API experience, automation, debugging, libraries, deployment, and ownership only when the question asks for technical depth.
 - Quality Assurance Engineer: expect test strategy, manual/automation testing, defect triage, automation framework reasoning, release quality decisions, escaped-defect learnings, and QA ownership only when the question asks for QA depth.
+- Design Verification: expect verification planning, SystemVerilog/UVM environments, directed and constrained-random testing, assertions, coverage closure, regression and debug ownership, collaboration with RTL designers, and tape-out sign-off involvement only when the question asks for verification depth.
+- DevOps: expect CI/CD pipelines, Infrastructure as Code, containers and Kubernetes, cloud platforms, release and deployment ownership, monitoring and observability, and incident response only when the question asks for DevOps depth.
 - Financial Analyst: expect modeling, forecasting, variance analysis, reporting, audit/compliance, Excel/BI tools, and business impact only when the question asks for finance/domain depth.
 - Product Manager: expect prioritization, discovery, PRDs, roadmap trade-offs, metrics, user research, GTM, and stakeholder alignment only when the question asks for product/domain depth.
 - Project Manager: expect timelines, scope, budget, RAID/risk management, dependency handling, delivery methodology, stakeholder communication, and delivery KPIs only when the question asks for project-management depth.

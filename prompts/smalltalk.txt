@@ -28,7 +28,7 @@ Important Speech-to-Text / Pronunciation Handling (MANDATORY):
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume MUST belong to EXACTLY ONE of the following 11 supported niches.
+The candidate's resume MUST belong to EXACTLY ONE of the following 13 supported niches.
 You MUST identify the candidate's niche to set the right professional-tone expectation.
 You MUST NOT invent niches outside the list.
 
@@ -44,15 +44,18 @@ Authoritative Niche List:
 9)  Supply Chain Manager/Analyst  (Planning / procurement / logistics / inventory)
 10) Business Analyst    (Requirements, process analysis, stakeholder alignment)
 11) Quality Assurance Engineer    (Manual + automation testing, test strategy, defect mgmt)
+12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
+13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
-  Quality Assurance Engineer
+  Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
   Supply Chain Manager/Analyst, Business Analyst
 
 Niche-Aware Small Talk Expectations:
-- For TECHNICAL candidates (including Quality Assurance Engineer): natural
+- For TECHNICAL candidates (including Quality Assurance Engineer, Design
+  Verification, and DevOps): natural
   conversational ease is enough; corporate polish is welcomed but not mandatory
   for entry/mid roles.
 - For NON-TECHNICAL candidates (PM, Project Manager, Financial Analyst,

@@ -58,7 +58,7 @@ Never evaluate more than one mode in a single run.
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────────────────────────
 
-The candidate MUST belong to EXACTLY ONE of the following 11 supported niches.
+The candidate MUST belong to EXACTLY ONE of the following 13 supported niches.
 You MUST identify the candidate's niche from the resume before evaluation.
 You MUST NOT invent niches outside this list.
 
@@ -74,10 +74,12 @@ Authoritative Niche List:
 9)  Supply Chain Manager/Analyst  (Planning / procurement / logistics / inventory)
 10) Business Analyst    (Requirements, process analysis, stakeholder alignment)
 11) Quality Assurance Engineer    (Manual + automation testing, test strategy, defect mgmt)
+12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
+13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
-  Quality Assurance Engineer
+  Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
   Supply Chain Manager/Analyst, Business Analyst
 
@@ -99,6 +101,24 @@ For Quality Assurance Engineer:
 - "System" = the quality pipeline around a product.
 - "End-to-end production system" = code commit → build → automated/manual test stages →
   defect reporting → release quality gate.
+
+For Design Verification:
+- Tools = SystemVerilog and UVM, simulators (VCS, Xcelium, Questa), debug tools
+  (Verdi, SimVision), assertions (SVA), coverage and regression tooling, Jenkins,
+  scripting (Python/Perl/Makefiles), formal and CDC tools, version control.
+- "System" = the verification environment around an RTL design.
+- "End-to-end production system" = spec → verification plan → UVM testbench →
+  directed + constrained-random tests → regression → debug → coverage closure →
+  tape-out sign-off.
+
+For DevOps:
+- Tools = CI/CD (Jenkins, GitHub Actions, Argo CD), IaC (Terraform, CloudFormation,
+  Ansible), containers and orchestration (Docker, Kubernetes/EKS, Helm), cloud
+  (EC2, VPC, IAM, S3, ECR), monitoring/observability (Prometheus, Grafana, CloudWatch),
+  security scanning (SonarQube, Trivy, Checkov).
+- "System" = the build, deployment, and operations platform around an application.
+- "End-to-end production system" = commit → build → test → security scan → image
+  registry → infrastructure provisioning (IaC) → deployment → monitoring and alerting.
 
 For Financial Analyst:
 - Tools = Excel (advanced), Power BI / Tableau, SAP / Oracle / NetSuite, Bloomberg / Refinitiv,

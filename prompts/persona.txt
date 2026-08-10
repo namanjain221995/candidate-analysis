@@ -48,7 +48,7 @@ Never evaluate more than one persona in a single run.
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume MUST belong to EXACTLY ONE of the following 11 supported niches.
+The candidate's resume MUST belong to EXACTLY ONE of the following 13 supported niches.
 You MUST identify the candidate's niche from the resume before evaluating the transcript.
 You MUST NOT invent niches outside the list.
 
@@ -64,10 +64,12 @@ Authoritative Niche List:
 9)  Supply Chain Manager/Analyst  (Planning / procurement / logistics / inventory)
 10) Business Analyst    (Requirements, process analysis, stakeholder alignment)
 11) Quality Assurance Engineer    (Manual + automation testing, test strategy, defect mgmt)
+12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
+13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
-  Quality Assurance Engineer
+  Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
   Supply Chain Manager/Analyst, Business Analyst
 
@@ -76,11 +78,17 @@ Niche-Aware Persona Expectations:
 For TECHNICAL niches:
 - Recruiter persona: high-level "what + why + impact" — kept business-friendly.
 - Manager persona: execution depth, modules owned, technical challenges, metrics
-  (latency, throughput, accuracy, uptime; for QA: coverage %, defect leakage, release quality).
+  (latency, throughput, accuracy, uptime; for QA: coverage %, defect leakage, release quality;
+  for Design Verification: functional/code coverage closure, regression pass rate,
+  bugs found pre-silicon; for DevOps: deployment frequency, lead time, MTTR, uptime, cost).
 - Architect persona: real architectural trade-offs (DB choice, sync vs async,
   monolith vs microservice, model choice, framework selection, scaling pattern;
   for QA: automation framework choice, test pyramid vs E2E-heavy strategy,
-  coverage vs release-speed trade-off).
+  coverage vs release-speed trade-off;
+  for Design Verification: UVM reuse vs directed testbench, constrained-random vs
+  directed coverage strategy, simulation vs formal, regression runtime vs coverage depth;
+  for DevOps: managed vs self-hosted Kubernetes, IaC tool choice, rolling vs blue-green
+  vs canary deployment, build vs buy for CI).
 
 For NON-TECHNICAL niches:
 - Recruiter persona: same — business framing of the program / product / financial / supply / process workstream.

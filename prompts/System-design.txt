@@ -49,7 +49,7 @@ Never evaluate more than one mode in a single run.
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────────────────────────
 
-The candidate MUST belong to EXACTLY ONE of the following 11 supported niches.
+The candidate MUST belong to EXACTLY ONE of the following 13 supported niches.
 You MUST identify the candidate's niche from the resume before evaluation.
 You MUST NOT invent niches outside this list.
 
@@ -65,10 +65,12 @@ Authoritative Niche List:
 9)  Supply Chain Manager/Analyst  (Planning / procurement / logistics / inventory)
 10) Business Analyst    (Requirements, process analysis, stakeholder alignment)
 11) Quality Assurance Engineer    (Manual + automation testing, test strategy, defect mgmt)
+12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
+13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
-  Quality Assurance Engineer
+  Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
   Supply Chain Manager/Analyst, Business Analyst
 
@@ -77,8 +79,9 @@ NICHE-AWARE REINTERPRETATION (MANDATORY)
 ────────────────────────────────────────────
 
 The 10-step structured framework below is written for technical system design.
-For TECHNICAL niches it applies directly. For Quality Assurance Engineer and the
-NON-TECHNICAL niches, you MUST reinterpret as follows:
+For TECHNICAL niches it applies directly. For Quality Assurance Engineer,
+Design Verification, DevOps, and the NON-TECHNICAL niches, you MUST reinterpret
+as follows:
 
 For Quality Assurance Engineer → "Test System / Quality Pipeline Design"
 - Clarify problem (e.g., design the test strategy/automation framework for X)
@@ -90,6 +93,30 @@ For Quality Assurance Engineer → "Test System / Quality Pipeline Design"
 - Deep dive = one stage (e.g., regression suite design, E2E flow selection)
 - Trade-offs = test pyramid vs E2E-heavy, parallelism vs infra cost, coverage vs speed
 - Scalability/bottlenecks = suite growth, runtime, environment contention
+
+For Design Verification → "Verification Environment / Testbench Architecture Design"
+- Clarify problem (e.g., design the verification environment for an AXI/Ethernet/PCIe IP)
+- Functional reqs = features and protocol behaviors that must be verified
+- Non-functional reqs = coverage goals, regression runtime, reusability, debug turnaround
+- Entities = agents, drivers, monitors, sequencers, scoreboards, register model (RAL)
+- "APIs" = DUT interfaces/BFMs, TLM/analysis ports, CI regression hooks
+- "Architecture" = testbench topology: stimulus → DUT → monitor → scoreboard/coverage → report
+- Deep dive = one component (scoreboard/predictor, sequence library, coverage model, assertions)
+- Trade-offs = constrained-random vs directed, UVM reuse vs custom testbench,
+  simulation vs formal, coverage depth vs regression runtime
+- Scalability/bottlenecks = IP → subsystem → SoC reuse, regression runtime, compute/licence limits
+
+For DevOps → "Infrastructure / Delivery Pipeline Design"
+- Clarify problem (e.g., design the CI/CD and deployment platform for X)
+- Functional reqs = build, test, scan, provision, deploy, rollback stages
+- Non-functional reqs = deployment frequency, lead time, MTTR, uptime, cost, security
+- Entities = repositories, pipelines, artifacts/images, environments, clusters, secrets
+- "APIs" = webhooks, image registries, cloud provider APIs, IaC providers, monitoring endpoints
+- "Architecture" = commit → build → test → scan → artifact → provision (IaC) → deploy → monitor
+- Deep dive = one stage (deployment strategy, secrets management, autoscaling, observability)
+- Trade-offs = managed vs self-hosted, rolling vs blue-green vs canary,
+  IaC tool choice, release speed vs gate strictness
+- Scalability/bottlenecks = build queue time, cluster capacity, state management, blast radius
 
 For Financial Analyst → "Financial Process / Model Design"
 - Clarify problem (e.g., build a forecasting framework, valuation model)
@@ -149,6 +176,8 @@ For Business Analyst → "Solution / Process Design"
 Diagram expectation by niche:
 - Technical: architecture/component/sequence diagrams (LLD/MLD/HLD).
 - QA: test-pipeline / quality-gate flow diagrams.
+- Design Verification: testbench topology / verification environment block diagrams.
+- DevOps: pipeline, deployment, and cloud infrastructure/network diagrams.
 - Non-technical: flow diagrams, swim-lanes, process maps, data-flow maps,
   governance maps, supply network maps, BPMN-style maps — all acceptable.
 - In every case the diagram MUST be readable, owned, and consistent with the transcript.

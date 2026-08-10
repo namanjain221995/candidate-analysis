@@ -35,7 +35,7 @@ Important Speech-to-Text / Pronunciation Handling (MANDATORY):
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume MUST belong to EXACTLY ONE of the following 11 supported niches.
+The candidate's resume MUST belong to EXACTLY ONE of the following 13 supported niches.
 You MUST first identify the candidate's niche from the resume before evaluating the transcript.
 You MUST NOT invent niches, merge niches, or assume a niche outside this list.
 
@@ -101,11 +101,30 @@ Authoritative Niche List:
    (JMeter), defect lifecycle, CI integration (Jenkins/GitHub Actions),
    frameworks (TestNG/PyTest), quality metrics (coverage, defect leakage).
 
+12) Design Verification (ASIC / SoC functional verification)
+   Expected areas: Verification planning and requirement traceability,
+   SystemVerilog, UVM components (agent, driver, monitor, sequencer,
+   scoreboard, RAL), directed and constrained-random verification,
+   SystemVerilog Assertions (SVA) and assertion-based verification,
+   functional and code coverage with coverage closure, regression
+   automation (Jenkins, VCS/Xcelium), debug (Verdi/SimVision), defect
+   lifecycle, protocols (AXI, PCIe, Ethernet MAC, SerDes), CDC,
+   tape-out sign-off criteria.
+
+13) DevOps             (CI/CD, cloud infrastructure, containers, orchestration)
+   Expected areas: DevOps lifecycle, CI/CD (Jenkins, GitHub Actions,
+   Argo CD/GitOps), Infrastructure as Code (Terraform, CloudFormation,
+   Ansible), configuration management, Linux fundamentals, networking
+   basics (TCP/IP, DNS, load balancing, reverse proxy), containers
+   (Docker), orchestration (Kubernetes/EKS, Helm), cloud core services
+   (EC2, VPC, IAM, S3, ECR), monitoring and observability (Prometheus,
+   Grafana, CloudWatch), DevSecOps and pipeline security scanning.
+
 Niche Categories (drives expectation calibration):
 
 TECHNICAL niches:
 - Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
-  Quality Assurance Engineer
+  Quality Assurance Engineer, Design Verification, DevOps
 
 NON-TECHNICAL / SEMI-TECHNICAL niches:
 - Financial Analyst, Product Manager, Project Manager,
@@ -114,7 +133,9 @@ NON-TECHNICAL / SEMI-TECHNICAL niches:
 Expectation Calibration Rules (MANDATORY):
 - For TECHNICAL niches: expect conceptual correctness on code, frameworks,
   architecture, debugging, system reasoning, tool depth (for QA: testing
-  concepts, automation, quality reasoning). Penalize shallow technical depth.
+  concepts, automation, quality reasoning; for Design Verification:
+  methodology, coverage and assertion reasoning; for DevOps: pipeline,
+  infrastructure and reliability reasoning). Penalize shallow technical depth.
 - For NON-TECHNICAL niches: expect domain accuracy, frameworks
   (PM/finance/delivery/supply/analysis), business reasoning, stakeholder
   handling, metrics. DO NOT penalize lack of deep coding or low-level system internals.
@@ -122,8 +143,8 @@ Expectation Calibration Rules (MANDATORY):
   If the PDF lacks the candidate's niche, calibrate using the Expected areas above.
 
 Anti-Hallucination Guardrails (MANDATORY):
-- Do NOT invent niches outside the list (e.g., "DevOps", "Data Engineer",
-  "Mobile Developer") — map to the closest supported niche.
+- Do NOT invent niches outside the list (e.g., "Data Engineer",
+  "Mobile Developer", "Cloud Architect") — map to the closest supported niche.
 - Do NOT assume tools, frameworks, or experience that are not explicitly stated.
 - Do NOT fabricate domain expectations beyond what the PDF and niche definition allow.
 - Do NOT blend expectations across niches.
@@ -147,7 +168,7 @@ INTERNAL EVALUATION STEPS (DO NOT DISPLAY)
 ────────────────────────
 
 Step 0 — Niche Identification (Internal)
-Identify the candidate's exact niche from the 11 supported niches.
+Identify the candidate's exact niche from the 13 supported niches.
 Lock the appropriate expectation profile (Technical vs Non-Technical) and PDF
 section (or the Expected areas fallback).
 

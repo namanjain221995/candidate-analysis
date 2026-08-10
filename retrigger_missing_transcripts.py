@@ -34,9 +34,10 @@ Usage (run from the repo folder so .env loads):
   python retrigger_missing_transcripts.py --links --run      # acknowledge them
   python retrigger_missing_transcripts.py --links --run --via-s3
   # sweep — SELF-HEALING: re-queue ANY deliverable missing its next artifact
-  #   (video->transcript, transcript->result, code->result) across ALL stages.
-  #   Grace-windowed (SWEEP_GRACE_MINUTES, default 15) so in-flight jobs are left
-  #   alone. Meant to run on a schedule (systemd timer / cron) in --run mode.
+  #   (video->transcript, transcript->result, code->result, image->result,
+  #   text->result) across ALL stages. Grace-windowed (SWEEP_GRACE_MINUTES,
+  #   default 15) so in-flight jobs are left alone. Meant to run on a schedule
+  #   (systemd timer / cron) in --run mode.
   python retrigger_missing_transcripts.py --sweep            # DRY RUN (all stages)
   python retrigger_missing_transcripts.py --sweep --run      # re-queue everything pending
 """
@@ -67,6 +68,11 @@ FAIL_MARKER = os.environ.get("LLM_FAIL_MARKER", "(Fail)")
 LINK_KEYWORDS = [k.strip().lower() for k in
                  os.environ.get("LINK_KEYWORDS", "github link,kaggle link").split(",") if k.strip()]
 VIDEO_EXTS = (".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v", ".mpeg", ".mpg")
+# Standalone image/text deliverables (a diagram or JD text scored on its OWN file)
+# have no transcript hop, so the video/transcript/code sweep never saw them: a stuck
+# one (e.g. a blank 0-byte diagram that looped on 'invalid_base64') was invisible and
+# never auto-recovered. The sweep now covers image->result and text->result too.
+IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".webp", ".gif")
 # --sweep additions (self-healing reconciliation). CODE_EXTS + the code queue let
 # the sweep also cover ungraded notebooks/scripts; RESULT_MARKER is how it tells a
 # deliverable was already scored; SWEEP_GRACE_MINUTES is a safety window so a job
@@ -78,6 +84,29 @@ try:
     SWEEP_GRACE_MINUTES = int(os.environ.get("SWEEP_GRACE_MINUTES", "15"))
 except ValueError:
     SWEEP_GRACE_MINUTES = 15
+
+# Which image/text folders are scored STANDALONE (own_image / own_text) vs. pulled
+# as a sibling input. The sweep must re-queue ONLY the standalone ones — a sibling /
+# day image lives in a folder whose own rule already scores it, so re-queuing every
+# loose image would loop combined-input files forever (they never get their own
+# result). Import the SAME match_rule the worker uses so the two never drift. If the
+# import fails (run outside the repo, missing env), the sweep still covers
+# video/transcript/code and just skips image/text.
+try:
+    from llm_config import match_rule as _match_rule
+except Exception as _exc:   # pragma: no cover
+    print(f"[SWEEP] llm_config unavailable ({_exc}); image/text sweep disabled")
+    _match_rule = None
+
+
+def _standalone_extras(deliverable_name):
+    """extras list for a folder's deliverable rule, or [] if there is no rule or the
+    rules could not be imported. Used to keep image/text sweeping to own_* folders."""
+    if _match_rule is None:
+        return []
+    rule = _match_rule(deliverable_name)
+    return rule[1] if rule else []
+
 
 # Match the app's S3 client (s3_store.build_s3_client): explicit region + SigV4, so
 # signing/region behaviour is identical to the running services.
@@ -216,14 +245,17 @@ def _run_mode(s3, *, finder, noun, queue_url, queue_label, body_fn, watch_cmd):
 
 def _find_pending_for_sweep(s3):
     """ONE bucket pass → (total, videos_missing_transcript, transcripts_missing_result,
-    code_missing_result).
+    code_missing_result, images_missing_result, texts_missing_result).
 
     - Only source files OLDER than SWEEP_GRACE_MINUTES are returned, so a job that
       is still in flight (its file just landed) is never double-queued.
     - Detection is per-folder and per-submission (stem match).
     - Only UNTAGGED source files are considered: once a deliverable is scored, its
       files end in a (Pass)/(Fail) marker (so they no longer end in a video ext /
-      _transcripts.txt / code ext) and are skipped automatically.
+      _transcripts.txt / code / image ext) and are skipped automatically.
+    - Images/texts are swept ONLY for folders whose deliverable rule scores their own
+      file (own_image / own_text). A sibling/day image is scored by the folder that
+      owns it, so it is left alone here (else it would loop forever with no result).
     """
     folders = defaultdict(dict)   # folder prefix -> {basename: LastModified}
     total = 0
@@ -235,10 +267,14 @@ def _find_pending_for_sweep(s3):
             folders[(prefix + "/") if prefix else ""][base] = obj.get("LastModified")
 
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=SWEEP_GRACE_MINUTES)
-    videos, transcripts, code = [], [], []
+    videos, transcripts, code, images, texts = [], [], [], [], []
 
     for prefix, names in folders.items():
         result_bases = [n for n in names if RESULT_MARKER in n]
+        # deliverable folder name = last path segment; its rule decides whether a
+        # loose image/text in here is scored standalone (own_*) or is a sibling input.
+        deliverable_name = prefix.rstrip("/").rsplit("/", 1)[-1] if prefix else ""
+        extras = _standalone_extras(deliverable_name)
         for base, last_modified in names.items():
             low = base.lower()
             # inside the grace window → maybe still processing, leave it alone
@@ -268,7 +304,30 @@ def _find_pending_for_sweep(s3):
                     code.append(prefix + base)
                 continue
 
-    return total, sorted(videos), sorted(transcripts), sorted(code)
+            # 4) untagged image in an own_image deliverable with NO result → needs
+            #    scoring. (A blank/corrupt image now returns a clean 0/FAIL, so this
+            #    is exactly how a stuck diagram gets recovered instead of looping.)
+            if low.endswith(IMAGE_EXTS):
+                if "own_image" not in extras:
+                    continue
+                stem = base.rsplit(".", 1)[0]
+                if not any(stem in rb for rb in result_bases):
+                    images.append(prefix + base)
+                continue
+
+            # 5) untagged text in an own_text deliverable with NO result → needs
+            #    scoring. Transcripts are handled in (2); link .txt files have no
+            #    own_text rule, so they stay with the dedicated --links flow.
+            if low.endswith(".txt"):
+                if "own_text" not in extras:
+                    continue
+                stem = base.rsplit(".", 1)[0]
+                if not any(stem in rb for rb in result_bases):
+                    texts.append(prefix + base)
+                continue
+
+    return (total, sorted(videos), sorted(transcripts), sorted(code),
+            sorted(images), sorted(texts))
 
 
 def _run_sweep(s3):
@@ -285,22 +344,29 @@ def _run_sweep(s3):
                      f"{', '.join(missing)} (run from the candidate-analysis folder "
                      f"so .env loads).")
 
-    total, videos, transcripts, code = _find_pending_for_sweep(s3)
+    total, videos, transcripts, code, images, texts = _find_pending_for_sweep(s3)
     print(f"[SWEEP] scanned {total} objects in s3://{BUCKET} "
           f"(grace window {SWEEP_GRACE_MINUTES} min)")
     print(f"[SWEEP] pending: {len(videos)} video->transcript, "
-          f"{len(transcripts)} transcript->result, {len(code)} code->result")
+          f"{len(transcripts)} transcript->result, {len(code)} code->result, "
+          f"{len(images)} image->result, {len(texts)} text->result")
     for k in videos:
         print("  [video]     ", k)
     for k in transcripts:
         print("  [transcript]", k)
     for k in code:
         print("  [code]      ", k)
+    for k in images:
+        print("  [image]     ", k)
+    for k in texts:
+        print("  [text]      ", k)
 
     if LIMIT:
-        videos, transcripts, code = videos[:LIMIT], transcripts[:LIMIT], code[:LIMIT]
+        videos, transcripts, code, images, texts = (
+            videos[:LIMIT], transcripts[:LIMIT], code[:LIMIT],
+            images[:LIMIT], texts[:LIMIT])
 
-    if not (videos or transcripts or code):
+    if not (videos or transcripts or code or images or texts):
         print("[SWEEP] nothing pending — pipeline is fully caught up.")
         return
     if not RUN:
@@ -318,8 +384,15 @@ def _run_sweep(s3):
                      lambda k: {"bucket": BUCKET, "key": k,
                                 "kind": "notebook" if k.lower().endswith(".ipynb") else "python",
                                 "file_extension": "." + k.rsplit(".", 1)[-1].lower()})
+    if images:
+        _requeue_sqs(LLM_QUEUE_URL, "LLM image (llm-jobs)", images,
+                     lambda k: {"bucket": BUCKET, "key": k, "kind": "image"})
+    if texts:
+        _requeue_sqs(LLM_QUEUE_URL, "LLM text (llm-jobs)", texts,
+                     lambda k: {"bucket": BUCKET, "key": k, "kind": "text"})
     print(f"\n[SWEEP] done — re-queued {len(videos)} video(s), "
-          f"{len(transcripts)} transcript(s), {len(code)} code file(s).")
+          f"{len(transcripts)} transcript(s), {len(code)} code file(s), "
+          f"{len(images)} image(s), {len(texts)} text(s).")
 
 
 def main():

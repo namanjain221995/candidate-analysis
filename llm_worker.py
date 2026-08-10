@@ -71,6 +71,23 @@ def _sf_id_from_name(name: str):
     return m.group(1) if m else None
 
 
+def _media_fail_result(statement: str, proof: str, suggestion: str) -> dict:
+    """A deterministic 0/FAIL result for blank / corrupt / missing required media.
+
+    Same shape as a graded result (score/result/reasoning/positives/negatives) so it
+    flows through finalize → Salesforce exactly like any other FAIL. Crucially it is
+    RETURNED (never raised), so the SQS message is deleted and the job stops looping
+    instead of retrying a doomed request forever.
+    """
+    return {
+        "score": 0,
+        "result": "FAIL",
+        "reasoning": statement + ".",
+        "positives": [],
+        "negatives": [f"{statement} | Proof: {proof} | Suggestion: {suggestion}"],
+    }
+
+
 # ── engine-tagged result naming ────────────────────────────────────────────────
 
 def _engine_result_suffix(engine: str) -> str:
@@ -102,13 +119,13 @@ def _gather_and_score(s3, client, *, deliverable_prefix, deliverable_name, trans
             return {
                 "score": 0,
                 "result": "FAIL",
-                "reasoning": "No usable speech was found in the submitted video — the recording appears muted or empty.",
+                "reasoning": "No usable speech was found in the submitted video — the recording appears blank, muted, or corrupted.",
                 "positives": [],
                 "negatives": [
-                    "No speech detected in your video — the recording appears muted or empty | "
+                    "No speech detected in your video — the recording appears blank, muted, or corrupted | "
                     "Proof: the transcript generated from your video contains no words | "
-                    "Suggestion: check that your microphone is on and not muted, re-record the video, "
-                    "play it back to confirm the audio is clearly audible, then upload it again."
+                    "Suggestion: make sure the file plays with clearly audible sound and is not blank; "
+                    "if it is corrupted, re-record the video and upload it again."
                 ],
             }
 
@@ -117,6 +134,24 @@ def _gather_and_score(s3, client, *, deliverable_prefix, deliverable_name, trans
 
     resume_text = reference_pdf_text = extra_text = None
     image_urls = []
+    image_required = False   # this rule needs a diagram/image (own/sibling/day image)
+    image_corrupt = False    # a located image failed validation (blank/corrupt)
+
+    def _attach_image(img_key):
+        """Download an image and attach it ONLY if it is a real, readable picture.
+        A blank/corrupt file is flagged (image_corrupt) and skipped, so it never
+        reaches the vision API as an invalid base64 payload."""
+        nonlocal image_corrupt
+        tmp = Path("/tmp") / Path(img_key).name
+        try:
+            llm_s3.download(s3, LLM_SETTINGS.bucket, img_key, tmp)
+            if llm_processor.is_valid_image(tmp):
+                image_urls.append(llm_processor.image_to_data_url(tmp))
+            else:
+                image_corrupt = True
+                print(f"[BAD-IMAGE] blank/corrupt image skipped: {img_key}")
+        finally:
+            tmp.unlink(missing_ok=True)
 
     for extra in extras:
         if extra == "resume":
@@ -137,14 +172,12 @@ def _gather_and_score(s3, client, *, deliverable_prefix, deliverable_name, trans
                 print(f"[WARN] reference PDF missing: {pdf_path}")
 
         elif extra == "sibling_image":
+            image_required = True
             sib = _find_sibling(s3, day_prefix, deliverable_name, want="image")
             if sib:
                 img = llm_s3.find_first_image(s3, LLM_SETTINGS.bucket, sib)
                 if img:
-                    tmp = Path("/tmp") / Path(img).name
-                    llm_s3.download(s3, LLM_SETTINGS.bucket, img, tmp)
-                    image_urls.append(llm_processor.image_to_data_url(tmp))
-                    tmp.unlink(missing_ok=True)
+                    _attach_image(img)
 
         elif extra == "sibling_text":
             sib = _find_sibling(s3, day_prefix, deliverable_name, want="text")
@@ -161,26 +194,22 @@ def _gather_and_score(s3, client, *, deliverable_prefix, deliverable_name, trans
             # Problem 1') is judged against the diagram that lives in the SIBLING
             # problem folder ('System Design Problem 2'). Take the newest image
             # anywhere under the day, excluding this deliverable's own folder.
+            image_required = True
             img = llm_s3.find_first_image(
                 s3, LLM_SETTINGS.bucket, day_prefix, exclude_prefix=deliverable_prefix
             )
             if img:
-                tmp = Path("/tmp") / Path(img).name
-                llm_s3.download(s3, LLM_SETTINGS.bucket, img, tmp)
-                image_urls.append(llm_processor.image_to_data_url(tmp))
-                tmp.unlink(missing_ok=True)
+                _attach_image(img)
                 print(f"[DAY-IMAGE] {deliverable_name} <- {img}")
             else:
                 print(f"[WARN] no sibling image under day {day_prefix} for {deliverable_name}")
 
         elif extra == "own_image":
             # standalone image deliverable: score the image in THIS folder
+            image_required = True
             img = llm_s3.find_first_image(s3, LLM_SETTINGS.bucket, deliverable_prefix)
             if img:
-                tmp = Path("/tmp") / Path(img).name
-                llm_s3.download(s3, LLM_SETTINGS.bucket, img, tmp)
-                image_urls.append(llm_processor.image_to_data_url(tmp))
-                tmp.unlink(missing_ok=True)
+                _attach_image(img)
             else:
                 print(f"[WARN] no image under {deliverable_prefix}")
 
@@ -194,6 +223,29 @@ def _gather_and_score(s3, client, *, deliverable_prefix, deliverable_name, trans
                 extra_text = llm_s3.read_text(s3, LLM_SETTINGS.bucket, txt)
             else:
                 print(f"[WARN] no text under {deliverable_prefix}")
+
+    # ── Blank / corrupt / missing required image → deterministic FAIL ─────────────
+    # A required image that is present but unreadable must NOT be sent to the vision
+    # API (it returns HTTP 400 "invalid_base64" and the job loops forever). Instead
+    # the candidate gets a clear FAIL telling them to re-upload. For System Design the
+    # diagram is essential, so a MISSING diagram is a FAIL too; for every other
+    # deliverable a missing image falls through to today's behaviour (score on the
+    # transcript/text, or skip below if there is nothing at all to evaluate).
+    is_system_design = (prompt_file == "System-design.txt")
+    if image_corrupt:
+        print(f"[BAD-IMAGE] {deliverable_name}: required image is blank/corrupt → 0/FAIL")
+        return _media_fail_result(
+            "The image you uploaded is corrupted or blank",
+            "the image file could not be read as a valid picture",
+            "re-upload a clear image (PNG or JPG) and resubmit.",
+        )
+    if is_system_design and image_required and not image_urls:
+        print(f"[NO-IMAGE] {deliverable_name}: system design needs a diagram → 0/FAIL")
+        return _media_fail_result(
+            "No architecture diagram was found for this system-design deliverable",
+            "this deliverable must be evaluated against a diagram and none was uploaded",
+            "upload a clear architecture diagram (PNG or JPG) and resubmit.",
+        )
 
     # standalone image/text deliverables must have their own content to score;
     # without it the model would have nothing to evaluate.
@@ -209,16 +261,30 @@ def _gather_and_score(s3, client, *, deliverable_prefix, deliverable_name, trans
     print(f"[LLM] scoring {deliverable_name} ({prompt_file})"
           f"{' +image' if image_urls else ''}{' +jdtext' if extra_text else ''}")
 
-    result = llm_processor.evaluate(
-        LLM_SETTINGS, client,
-        system_prompt=system_prompt,
-        deliverable_name=deliverable_name,
-        transcript_text=transcript_text,
-        resume_text=resume_text,
-        reference_pdf_text=reference_pdf_text,
-        extra_text=extra_text,
-        image_data_urls=image_urls or None,
-    )
+    try:
+        result = llm_processor.evaluate(
+            LLM_SETTINGS, client,
+            system_prompt=system_prompt,
+            deliverable_name=deliverable_name,
+            transcript_text=transcript_text,
+            resume_text=resume_text,
+            reference_pdf_text=reference_pdf_text,
+            extra_text=extra_text,
+            image_data_urls=image_urls or None,
+        )
+    except RuntimeError as exc:
+        # Safety net: if a bad image slipped past validation and the vision API
+        # rejected it (HTTP 400 invalid_base64), turn that into the same FAIL — never
+        # retry forever. Any other RuntimeError still propagates and retries via SQS.
+        low = str(exc).lower()
+        if "invalid_base64" in low or "invalid base64" in low or "image_url" in low:
+            print(f"[BAD-IMAGE] {deliverable_name}: evaluator rejected the image → 0/FAIL")
+            return _media_fail_result(
+                "The image you uploaded is corrupted or blank",
+                "the image could not be processed by the evaluator",
+                "re-upload a clear image (PNG or JPG) and resubmit.",
+            )
+        raise
     result["deliverable"] = deliverable_name
     return result
 

@@ -81,7 +81,16 @@ def _handle_message(sqs, s3, body: dict) -> None:
         return
 
     if s3_store.object_size(s3, bucket, video_key) == 0:
-        raise NonRetryableTranscriptionError(f"S3 video is empty: {video_key}")
+        # Blank/corrupt upload (0 bytes in S3). Don't silently drop it — that leaves
+        # the candidate with no feedback and makes the sweep re-queue it forever.
+        # Write an EMPTY transcript for each pending engine instead: the scoring stage
+        # then hits its empty-transcript guard and returns a deterministic 0/FAIL
+        # ("blank, muted, or corrupted — re-upload"), exactly like a no-audio video.
+        print(f"[EMPTY-VIDEO] 0-byte video; writing empty transcript(s) for FAIL feedback: {video_key}")
+        for engine, transcript_key in pending:
+            print(f"[UP] ({engine}) s3://{bucket}/{transcript_key}  (empty — blank video)")
+            s3_store.upload_text(s3, bucket, transcript_key, "")
+        return
 
     with tempfile.TemporaryDirectory() as temp_dir:
         local_video = Path(temp_dir) / safe_local_filename(video_name, "video.mp4")

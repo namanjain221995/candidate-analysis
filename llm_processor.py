@@ -10,6 +10,7 @@ Returns a parsed dict: {score, result, reasoning, positives, negatives}.
 
 import base64
 import hashlib
+import io
 import json
 import re
 import time
@@ -138,6 +139,47 @@ def image_to_data_url(image_path: Path) -> str:
     mime = {"jpg": "jpeg", "jpeg": "jpeg", "png": "png", "webp": "webp", "gif": "gif"}.get(ext, "png")
     b64 = base64.b64encode(image_path.read_bytes()).decode("ascii")
     return f"data:image/{mime};base64,{b64}"
+
+
+# Recognisable image signatures (magic bytes). A file that is empty or does not
+# start with one of these is not a usable picture — the vision API rejects it with
+# HTTP 400 "invalid_base64", which (untreated) makes the scoring job retry forever.
+# We detect that up front so a blank/corrupt image becomes a clean FAIL instead.
+_IMAGE_MAGIC = (
+    b"\x89PNG\r\n\x1a\n",   # PNG
+    b"\xff\xd8\xff",         # JPEG
+    b"GIF87a", b"GIF89a",   # GIF
+)
+
+
+def is_valid_image(image_path: Path) -> bool:
+    """True only for a non-empty, recognisable image (PNG/JPEG/GIF/WEBP).
+
+    A blank (0-byte) or corrupt file returns False, so a bad image can never be
+    base64-encoded into a request and sink the whole scoring call. If Pillow is
+    installed we also confirm the bytes actually decode (this catches truncated
+    files that still carry a valid header); without Pillow the magic-byte header
+    check is used on its own.
+    """
+    try:
+        data = image_path.read_bytes()
+    except Exception:
+        return False
+    if not data:
+        return False
+    header_ok = data.startswith(_IMAGE_MAGIC) or (data[:4] == b"RIFF" and data[8:12] == b"WEBP")
+    if not header_ok:
+        return False
+    try:
+        from PIL import Image
+    except ImportError:
+        return True   # no Pillow available — trust the magic-byte header
+    try:
+        with Image.open(io.BytesIO(data)) as im:
+            im.verify()
+        return True
+    except Exception:
+        return False
 
 
 def _clean_json(text: str) -> dict:

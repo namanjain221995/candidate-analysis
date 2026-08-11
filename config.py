@@ -77,6 +77,13 @@ class Settings:
     chunk_seconds:       int  = _int("CHUNK_SECONDS", 180)
     overlap_seconds:     int  = _int("OVERLAP_SECONDS", 2)
     ffmpeg_path:         str  = _str("FFMPEG_PATH", "ffmpeg")
+    # Fallback decoder for recordings whose (mildly-malformed) AAC audio a newer,
+    # stricter ffmpeg build (e.g. the 7.x static build) refuses to decode, but an
+    # older, more lenient build (e.g. 4.4.x) decodes fine. When the primary ffmpeg
+    # fails to extract audio, extract_audio_mp3 retries with this binary before
+    # giving up. Empty = primary-only (original behaviour). Use an ABSOLUTE path,
+    # e.g. /home/ec2-user/ffmpeg-4.4.1-amd64-static/ffmpeg
+    ffmpeg_fallback_path: str  = _str("FFMPEG_FALLBACK_PATH", "")
 
     # Retry / pacing
     failure_sleep_seconds: int = _int("FAILURE_SLEEP_SECONDS", 5)

@@ -80,44 +80,57 @@ def ensure_ffmpeg(settings: Settings) -> None:
     )
 
 
-def extract_audio_mp3(settings: Settings, video_path: Path, mp3_path: Path) -> None:
-    """Extract mono 16 kHz MP3 from any video container."""
-    base_args = [
-        settings.ffmpeg_path,
-        "-y",
-        "-loglevel",
-        "error",
-        "-i",
-        str(video_path),
-        "-vn",
-        "-ac",
-        "1",
-        "-ar",
-        "16000",
-        "-codec:a",
-        "libmp3lame",
-        "-b:a",
-        settings.openai_audio_bitrate,
+def _extract_with(ffmpeg_bin: str, settings: Settings, video_path: Path, mp3_path: Path) -> bool:
+    """Try ONE ffmpeg binary: a light-denoise pass first, then a plain pass. Returns
+    True on the first success, False if both fail (or the binary is missing). Never
+    raises, so the caller can cleanly fall through to a fallback decoder."""
+    base = [
+        ffmpeg_bin, "-y", "-loglevel", "error", "-i", str(video_path),
+        "-vn", "-ac", "1", "-ar", "16000",
+        "-codec:a", "libmp3lame", "-b:a", settings.openai_audio_bitrate,
     ]
-
-    proc = subprocess.run(
-        base_args + ["-af", "highpass=f=80,afftdn=nf=-25", str(mp3_path)],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-
-    if proc.returncode != 0:
-        proc2 = subprocess.run(
-            base_args + [str(mp3_path)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        if proc2.returncode != 0:
-            raise RuntimeError(
-                f"ffmpeg audio extraction failed: {proc2.stderr.strip()}"
+    last = ""
+    for extra in (["-af", "highpass=f=80,afftdn=nf=-25"], []):
+        try:
+            proc = subprocess.run(
+                base + extra + [str(mp3_path)],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
             )
+        except FileNotFoundError:
+            print(f"[FFMPEG] binary not found: {ffmpeg_bin}")
+            return False
+        if proc.returncode == 0:
+            return True
+        last = (proc.stderr or "").strip()
+    print(f"[FFMPEG] extraction failed with {ffmpeg_bin}: {last[:300]}")
+    return False
+
+
+def extract_audio_mp3(settings: Settings, video_path: Path, mp3_path: Path) -> None:
+    """Extract a mono 16 kHz MP3 from any video container.
+
+    Some recordings have mildly-malformed AAC framing that a newer, stricter ffmpeg
+    build (e.g. the 7.x static build) refuses to decode ("channel element not
+    allocated", "Prediction is not allowed in AAC-LC"), while an older, more lenient
+    build (e.g. 4.4.x) decodes them cleanly. So: try the primary ffmpeg first; if it
+    can't extract the audio, retry with the fallback decoder (FFMPEG_FALLBACK_PATH).
+    Raise only if BOTH fail — prepare_audio then turns that into a muted-video FAIL
+    (empty transcript → 0/FAIL re-record) instead of an endless SQS retry.
+    """
+    if _extract_with(settings.ffmpeg_path, settings, video_path, mp3_path):
+        return
+
+    fallback = (getattr(settings, "ffmpeg_fallback_path", "") or "").strip()
+    if fallback and fallback != settings.ffmpeg_path:
+        print(f"[FFMPEG] primary decoder failed — retrying with fallback: {fallback}")
+        if _extract_with(fallback, settings, video_path, mp3_path):
+            print("[FFMPEG] fallback decoder succeeded")
+            return
+
+    raise RuntimeError(
+        "ffmpeg audio extraction failed "
+        + ("(primary and fallback)" if fallback else "(primary; no fallback configured)")
+    )
 
 
 def audio_duration_seconds(settings: Settings, audio_path: Path) -> float:
@@ -507,11 +520,21 @@ def prepare_audio(settings: Settings, video_path: Path) -> Optional[Path]:
     """Extract the mono 16 kHz MP3 ONCE so both engines share the exact same
     input (clean paired comparison + saves a second ffmpeg pass).
 
-    Returns the mp3 path, or None when the video has no audio stream at all —
-    the caller then writes an empty transcript so the scoring stage gives the
-    candidate a deterministic 0/FAIL with re-record guidance.
+    Returns the mp3 path, or None when no USABLE audio can be produced — the video
+    has no audio track, is unreadable by ffprobe, or its audio is undecodable by BOTH
+    the primary and fallback ffmpeg. In every one of those cases the caller writes an
+    empty transcript, so the scoring stage gives the candidate a deterministic 0/FAIL
+    with re-record guidance instead of the job retrying a doomed extraction forever.
     """
-    if not has_audio_stream(settings, video_path):
+    # A video ffprobe can't even read is corrupt/unreadable → treat as muted.
+    try:
+        audio_present = has_audio_stream(settings, video_path)
+    except NonRetryableTranscriptionError as exc:
+        print(f"[WARN] video unreadable by ffprobe ({exc}) — returning empty transcript "
+              "so the scoring stage can give the candidate 0/FAIL feedback")
+        return None
+
+    if not audio_present:
         # Candidate uploaded a video with no audio track at all. Instead of
         # failing permanently (which leaves the candidate with NO result and no
         # explanation), the caller returns an empty transcript: the LLM worker
@@ -524,7 +547,16 @@ def prepare_audio(settings: Settings, video_path: Path) -> Optional[Path]:
     mp3_path = video_path.with_name(f"{video_path.stem}__audio.mp3")
 
     print("[RUN] extracting audio mono 16 kHz MP3")
-    extract_audio_mp3(settings, video_path, mp3_path)
+    # Audio stream present but NEITHER ffmpeg build could decode it. Retrying the
+    # same bytes fails identically, so treat it like a muted video: empty transcript
+    # → 0/FAIL re-record, instead of looping on the SQS message forever.
+    try:
+        extract_audio_mp3(settings, video_path, mp3_path)
+    except RuntimeError as exc:
+        print(f"[WARN] audio present but undecodable ({exc}) — returning empty transcript "
+              "so the scoring stage can give the candidate 0/FAIL feedback")
+        mp3_path.unlink(missing_ok=True)
+        return None
     return mp3_path
 
 

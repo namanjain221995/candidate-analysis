@@ -48,7 +48,7 @@ Never evaluate more than one persona in a single run.
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume MUST belong to EXACTLY ONE of the following 13 supported niches.
+The candidate's resume MUST belong to EXACTLY ONE of the following 14 supported niches.
 You MUST identify the candidate's niche from the resume before evaluating the transcript.
 You MUST NOT invent niches outside the list.
 
@@ -66,12 +66,13 @@ Authoritative Niche List:
 11) Quality Assurance Engineer    (Manual + automation testing, test strategy, defect mgmt)
 12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
+14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
   Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
-  Supply Chain Manager/Analyst, Business Analyst
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner
 
 Niche-Aware Persona Expectations:
 
@@ -95,6 +96,9 @@ For NON-TECHNICAL niches:
 - Manager persona:
   - Financial Analyst → modeling decisions, forecasting accuracy, audit/compliance, reporting cadence.
   - Product Manager → discovery decisions, prioritization rationale, metric impact, stakeholder handling.
+  - Product Owner → backlog and refinement decisions, story splitting and acceptance
+    criteria calls, sprint and release scope decisions, stakeholder negotiation, and
+    delivery/adoption metrics (sprint predictability, feature adoption, CSAT/NPS).
   - Project Manager → planning decisions, risk management, dependency resolution, delivery KPIs.
   - Supply Chain Manager/Analyst → planning/vendor decisions, disruption handling,
     inventory and service KPIs (OTIF, inventory turns, fill rate).
@@ -103,6 +107,9 @@ For NON-TECHNICAL niches:
 - Architect persona: REINTERPRET as "Strategic/Senior Decision Defense" —
   - Financial Analyst → defend a modeling/methodology choice (e.g., DCF vs comparables, top-down vs bottom-up forecast) with trade-offs.
   - Product Manager → defend a strategic product decision (e.g., build vs buy, sunset a feature, prioritization call) with trade-offs.
+  - Product Owner → defend a product-ownership decision (e.g., MVP scope cut, deferring a
+    feature to pay down technical debt, phased vs big-bang release, splitting an epic,
+    choosing one stakeholder request over another) with trade-offs.
   - Project Manager → defend a delivery decision (e.g., methodology switch, scope cut, vendor selection) with trade-offs.
   - Supply Chain Manager/Analyst → defend a supply decision (e.g., single vs dual sourcing, safety-stock policy, make-vs-buy, network redesign) with trade-offs.
   - Business Analyst → defend a solution/requirements decision (e.g., build vs configure, process redesign option, phased vs big-bang rollout) with trade-offs.
@@ -113,6 +120,12 @@ Anti-Hallucination Guardrails:
 - Do NOT invent niches outside the list.
 - Do NOT assume project content not present in the transcript.
 - Do NOT blend niche expectations.
+- Product Owner and Product Manager are SEPARATE niches and MUST NOT be merged.
+  Classify as Product Owner when the resume centres on backlog ownership, user stories,
+  refinement, and sprint execution with a Scrum team. Classify as Product Manager when
+  it centres on product strategy, market and competitor research, roadmap ownership,
+  pricing, and GTM. If both are genuinely covered, pick the one the candidate spends
+  most of their described time on and evaluate against that profile only.
 
 ────────────────────────
 PERSONA MODE RUBRICS (Evaluate ONLY the detected mode)

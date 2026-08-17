@@ -49,7 +49,7 @@ Never evaluate more than one mode in a single run.
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────────────────────────
 
-The candidate MUST belong to EXACTLY ONE of the following 13 supported niches.
+The candidate MUST belong to EXACTLY ONE of the following 14 supported niches.
 You MUST identify the candidate's niche from the resume before evaluation.
 You MUST NOT invent niches outside this list.
 
@@ -67,12 +67,13 @@ Authoritative Niche List:
 11) Quality Assurance Engineer    (Manual + automation testing, test strategy, defect mgmt)
 12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
+14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
   Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
-  Supply Chain Manager/Analyst, Business Analyst
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner
 
 ────────────────────────────────────────────
 NICHE-AWARE REINTERPRETATION (MANDATORY)
@@ -140,6 +141,21 @@ For Product Manager → "Product/Feature System Design"
 - Trade-offs = build vs buy, scope vs speed, MVP choices, metric trade-offs
 - Scalability/bottlenecks = adoption scaling, segment expansion, ops cost
 
+For Product Owner → "Backlog / Delivery Structure Design"
+- Clarify problem (e.g., structure the backlog and release plan for a new capability)
+- Functional reqs = user-facing capabilities expressed as epics and user stories
+- Non-functional reqs = acceptance criteria, Definition of Ready/Done, release cadence,
+  compliance/accessibility constraints
+- Entities = epics, features, user stories, acceptance criteria, personas, sprints, releases
+- "APIs" = hand-offs between the PO, Scrum team, UX and stakeholders; cross-team dependencies
+- "Architecture" = value flow: vision → roadmap theme → epic → story → sprint → release →
+  adoption measurement
+- Deep dive = one epic decomposed into stories with acceptance criteria and dependency order
+- Trade-offs = MVP scope vs completeness, prioritization framework choice, feature work vs
+  technical debt, phased vs big-bang release
+- Scalability/bottlenecks = backlog growth and hygiene, refinement capacity, cross-team
+  dependencies, one backlog across multiple Scrum teams
+
 For Project Manager → "Delivery System / Program Design"
 - Clarify problem (e.g., design delivery model for a multi-team program)
 - Functional reqs = phases, deliverables, milestones
@@ -178,12 +194,19 @@ Diagram expectation by niche:
 - QA: test-pipeline / quality-gate flow diagrams.
 - Design Verification: testbench topology / verification environment block diagrams.
 - DevOps: pipeline, deployment, and cloud infrastructure/network diagrams.
+- Product Owner: story maps, epic/backlog breakdown structures, sprint and release flow diagrams.
 - Non-technical: flow diagrams, swim-lanes, process maps, data-flow maps,
   governance maps, supply network maps, BPMN-style maps — all acceptable.
 - In every case the diagram MUST be readable, owned, and consistent with the transcript.
 
 Anti-Hallucination Guardrails:
 - Do NOT invent niches outside the list.
+- Product Owner and Product Manager are SEPARATE niches and MUST NOT be merged.
+  Classify as Product Owner when the resume centres on backlog ownership, user stories,
+  refinement, and sprint execution with a Scrum team. Classify as Product Manager when
+  it centres on product strategy, market and competitor research, roadmap ownership,
+  pricing, and GTM. Each has its own reinterpretation above — use the one matching the
+  locked niche, never the other.
 - Do NOT force technical system-design vocabulary onto non-technical candidates.
 - Do NOT penalize non-technical candidates for not using DB/cache/queue terminology
   IF they used niche-appropriate equivalents above.

@@ -58,7 +58,7 @@ Never evaluate more than one mode in a single run.
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────────────────────────
 
-The candidate MUST belong to EXACTLY ONE of the following 13 supported niches.
+The candidate MUST belong to EXACTLY ONE of the following 14 supported niches.
 You MUST identify the candidate's niche from the resume before evaluation.
 You MUST NOT invent niches outside this list.
 
@@ -76,12 +76,13 @@ Authoritative Niche List:
 11) Quality Assurance Engineer    (Manual + automation testing, test strategy, defect mgmt)
 12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
+14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
   Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
-  Supply Chain Manager/Analyst, Business Analyst
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner
 
 ────────────────────────────────────────────
 NICHE-AWARE "TOOLS" REINTERPRETATION (MANDATORY)
@@ -132,6 +133,18 @@ For Product Manager:
 - "System" = product discovery → ideation → PRD → build → launch → measure → iterate.
 - "End-to-end production system" = the product delivery & measurement lifecycle.
 
+For Product Owner:
+- Tools = backlog and Agile platforms (Jira, Azure DevOps, Rally), documentation and
+  collaboration (Confluence, Notion, Miro), design hand-off (Figma), analytics for
+  adoption tracking (GA, Mixpanel, Amplitude), reporting (dashboards, burndown/velocity
+  charts), prioritization techniques (MoSCoW, RICE, WSJF) and estimation practices.
+- "System" = the backlog-to-release delivery cycle around a Scrum team.
+- "End-to-end production system" = requirement/idea intake → epic → user story with
+  acceptance criteria → refinement (Definition of Ready) → sprint → review and acceptance
+  (Definition of Done) → release → adoption measurement and feedback into the backlog.
+- Tool depth here means workflow ownership (how boards, states, and reports are actually
+  configured and used), NOT engineering configuration of the underlying platforms.
+
 For Project Manager:
 - Tools = Jira, MS Project, Asana, Smartsheet, Confluence, MIRO, Power BI dashboards.
 - "System" = intake → planning → execution → governance → close-out.
@@ -157,6 +170,13 @@ For ALL niches, the candidate must:
 
 Anti-Hallucination Guardrails:
 - Do NOT invent niches.
+- Product Owner and Product Manager are SEPARATE niches and MUST NOT be merged.
+  Classify as Product Owner when the resume centres on backlog ownership, user stories,
+  refinement, and sprint execution with a Scrum team. Classify as Product Manager when
+  it centres on product strategy, market and competitor research, roadmap ownership,
+  pricing, and GTM. Each has its own tools reinterpretation above — use the one matching
+  the locked niche, never the other. Do NOT penalize a Product Owner for not using
+  experimentation or market-research tooling.
 - Do NOT assume tool usage not stated.
 - Do NOT expect technical-niche tools from non-technical candidates.
 - Do NOT expect business-niche tools from technical candidates.

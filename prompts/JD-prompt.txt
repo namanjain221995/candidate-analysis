@@ -53,7 +53,7 @@ Never evaluate more than one mode in a single run.
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────────────────────────
 
-The candidate's resume will belong to EXACTLY ONE of the following 13 supported niches.
+The candidate's resume will belong to EXACTLY ONE of the following 14 supported niches.
 You MUST identify the candidate's niche from the resume before evaluating.
 The JD may target the same or an adjacent niche.
 You MUST NOT invent niches outside the list.
@@ -72,12 +72,13 @@ Authoritative Niche List:
 11) Quality Assurance Engineer    (Manual + automation testing, test strategy, defect mgmt)
 12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
+14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
   Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
-  Supply Chain Manager/Analyst, Business Analyst
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner
 
 Niche-Aware JD Mapping Expectations (MODE V):
 - For TECHNICAL candidates: expect alignment expressed in technical terms — stack
@@ -95,6 +96,10 @@ Niche-Aware JD Mapping Expectations (MODE V):
     (Excel, Power BI, SAP, Bloomberg), and quantifiable financial outcomes.
   - Product Manager: alignment via product surfaces owned, user metrics,
     prioritization frameworks, stakeholder management, GTM.
+  - Product Owner: alignment via backlog ownership, user stories and acceptance
+    criteria, prioritization frameworks (MoSCoW, RICE, WSJF), Scrum ceremonies and
+    team setup, MVP and release scope decisions, Agile tooling (Jira, Confluence),
+    and product KPIs (feature adoption, sprint predictability, CSAT/NPS).
   - Project Manager: alignment via methodology (Agile/Waterfall), program scope,
     delivery KPIs, risk/dependency management.
   - Supply Chain Manager/Analyst: alignment via planning/procurement/logistics scope,
@@ -111,6 +116,15 @@ Anti-Hallucination Guardrails:
 - Do NOT invent niches outside the list. Map ambiguous resumes to the closest supported niche.
 - Do NOT assume JD content not present in the provided inputs.
 - Do NOT blend niche expectations.
+- Product Owner and Product Manager are SEPARATE niches and MUST NOT be merged.
+  Classify as Product Owner when the resume centres on backlog ownership, user
+  stories, refinement, and sprint execution with a Scrum team. Classify as Product
+  Manager when it centres on product strategy, market and competitor research,
+  roadmap ownership, pricing, and GTM. If both are genuinely covered, pick the one
+  the candidate spends most of their described time on and evaluate against that
+  profile only. A Product Owner resume mapped to a Product Manager JD (or the
+  reverse) is an ADJACENT-role mapping, not a misalignment — do NOT flag it as a
+  credibility risk on that basis alone.
 
 ────────────────────────────────────────────
 SPEECH-TO-TEXT HANDLING (MANDATORY — MODE V)

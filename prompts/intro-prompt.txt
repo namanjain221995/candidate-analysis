@@ -31,7 +31,7 @@ Important Speech-to-Text / Pronunciation Handling (MANDATORY):
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume/intro will belong to EXACTLY ONE of the following 13 supported niches.
+The candidate's resume/intro will belong to EXACTLY ONE of the following 14 supported niches.
 You MUST first identify the candidate's niche before evaluating.
 You MUST NOT invent niches outside this list.
 
@@ -49,12 +49,13 @@ Authoritative Niche List:
 11) Quality Assurance Engineer    (Manual + automation testing, test strategy, defect mgmt)
 12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
+14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
   Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
-  Supply Chain Manager/Analyst, Business Analyst
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner
 
 Expectation Calibration for Self-Introduction:
 - For TECHNICAL niches: expect mention of tech stack, frameworks, system/product owned, technical impact (latency, scale, uptime, model accuracy, etc.).
@@ -64,6 +65,7 @@ Expectation Calibration for Self-Introduction:
 - For NON-TECHNICAL niches:
   - Financial Analyst: expect domain (FP&A, equity research, audit), tools (Excel, Power BI, Tableau, SAP), and quantifiable business impact ($ savings, forecast accuracy, deal value).
   - Product Manager: expect product owned, user base, key metrics (DAU/MAU, retention, NPS), and outcome of decisions.
+  - Product Owner: expect product/platform supported, Scrum team size and setup, backlog and release scope owned, Agile tooling (Jira, Confluence, Azure DevOps), and impact (feature adoption, sprint predictability, release frequency, CSAT/NPS). Do NOT expect market strategy, pricing, or GTM ownership in the intro.
   - Project Manager: expect program scope, team size, delivery methodology, budget/timeline outcomes.
   - Supply Chain Manager/Analyst: expect domain (planning, procurement, logistics, inventory), tools (SAP/Oracle, Excel, Power BI, planning platforms like Kinaxis/o9), and quantifiable impact (cost savings, OTIF %, inventory reduction, lead-time cuts).
   - Business Analyst: expect domain/industry, tools (SQL, Excel, Power BI/Tableau, Jira/Confluence, Visio), elicitation/process analysis work, and impact (process time saved, adoption, requirement quality / UAT outcomes).
@@ -74,6 +76,13 @@ Anti-Hallucination Guardrails:
 - Do NOT invent niches not on the list. Map ambiguous resumes to the closest supported niche.
 - Do NOT assume tools, projects, or metrics not stated in the transcript.
 - Do NOT blend niche expectations.
+- Product Owner and Product Manager are SEPARATE niches and MUST NOT be merged.
+  Classify as Product Owner when the intro/resume centres on backlog ownership, user
+  stories, refinement, and sprint execution with a Scrum team. Classify as Product
+  Manager when it centres on product strategy, market and competitor research,
+  roadmap ownership, pricing, and GTM. If both are genuinely covered, pick the one
+  the candidate spends most of their described time on and evaluate against that
+  profile only.
 
 ────────────────────────
 INTERNAL EVALUATION STEPS (DO NOT DISPLAY)

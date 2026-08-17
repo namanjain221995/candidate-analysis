@@ -72,6 +72,7 @@ Authoritative Niche List:
 11) Quality Assurance Engineer — Manual + automation testing, test strategy, defect management
 12) Design Verification — ASIC / SoC functional verification: SystemVerilog, UVM, coverage, assertions
 13) DevOps — CI/CD, cloud infrastructure, containers, orchestration, monitoring
+14) Product Owner — Agile execution: backlog ownership, user stories, sprint delivery
 
 Niche Categories:
 - TECHNICAL:
@@ -79,7 +80,8 @@ Niche Categories:
   Design Verification, DevOps
 
 - NON-TECHNICAL / SEMI-TECHNICAL:
-  Financial Analyst, Product Manager, Project Manager, Supply Chain Manager/Analyst, Business Analyst
+  Financial Analyst, Product Manager, Project Manager, Supply Chain Manager/Analyst, Business Analyst,
+  Product Owner
 
 Expectation Calibration Rules:
 - This interview delivery primarily evaluates general HR, logistical, behavioral, and resume-defense questions.
@@ -103,6 +105,7 @@ Niche-Specific Expectations When Relevant:
 - DevOps: expect CI/CD pipelines, Infrastructure as Code, containers and Kubernetes, cloud platforms, release and deployment ownership, monitoring and observability, and incident response only when the question asks for DevOps depth.
 - Financial Analyst: expect modeling, forecasting, variance analysis, reporting, audit/compliance, Excel/BI tools, and business impact only when the question asks for finance/domain depth.
 - Product Manager: expect prioritization, discovery, PRDs, roadmap trade-offs, metrics, user research, GTM, and stakeholder alignment only when the question asks for product/domain depth.
+- Product Owner: expect backlog ownership, user stories and acceptance criteria, refinement and sprint ceremonies, prioritization calls, stakeholder negotiation, MVP and release scope decisions, and product KPIs only when the question asks for product-ownership depth.
 - Project Manager: expect timelines, scope, budget, RAID/risk management, dependency handling, delivery methodology, stakeholder communication, and delivery KPIs only when the question asks for project-management depth.
 - Supply Chain Manager/Analyst: expect planning, forecasting, procurement, logistics, inventory, vendor decisions, disruption handling, OTIF, turns, cost savings, and service-level outcomes only when the question asks for supply-chain/domain depth.
 - Business Analyst: expect requirements elicitation, stakeholder alignment, process mapping, requirement conflict resolution, UAT, adoption, documentation, and business process improvement only when the question asks for business-analysis depth.
@@ -110,6 +113,12 @@ Niche-Specific Expectations When Relevant:
 Anti-Hallucination Guardrails:
 - Do NOT invent niches outside the supported list.
 - Map ambiguous resumes to the closest supported niche.
+- Product Owner and Product Manager are SEPARATE niches and MUST NOT be merged.
+  Classify as Product Owner when the resume centres on backlog ownership, user stories,
+  refinement, and sprint execution with a Scrum team. Classify as Product Manager when it
+  centres on product strategy, market and competitor research, roadmap ownership, pricing,
+  and GTM. If both are genuinely covered, pick the one the candidate spends most of their
+  described time on and evaluate against that profile only.
 - If no clear niche fits, fall back to Software Engineer only when it is the closest reasonable match.
 - Do NOT assume tools, frameworks, employers, certifications, projects, or impact metrics not explicitly stated in the resume or transcript.
 - Do NOT assume answers or stories that are not in the transcript.

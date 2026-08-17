@@ -30,7 +30,7 @@ Important Speech-to-Text / Pronunciation Handling (MANDATORY):
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume will belong to EXACTLY ONE of the following 13 supported niches.
+The candidate's resume will belong to EXACTLY ONE of the following 14 supported niches.
 You MUST first identify the candidate's niche from the resume before evaluating anything.
 You MUST NOT invent niches, merge niches, or assume a niche outside this list.
 
@@ -48,6 +48,7 @@ Authoritative Niche List:
 11) Quality Assurance Engineer    (Manual + automation testing, test strategy, defect mgmt)
 12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
+14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
 
 Niche Categories (affects evaluation expectations):
 
@@ -57,7 +58,7 @@ TECHNICAL niches (expect coding/architecture/tools/testing depth):
 
 NON-TECHNICAL / SEMI-TECHNICAL niches (expect business/delivery/domain depth — NOT deep coding/system design):
 - Financial Analyst, Product Manager, Project Manager,
-  Supply Chain Manager/Analyst, Business Analyst
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner
 
 Expectation Calibration Rules (MANDATORY):
 - For TECHNICAL niches: expect depth on code, frameworks, architecture, trade-offs, tooling, hands-on ownership. Penalize shallow technical depth.
@@ -67,6 +68,7 @@ Expectation Calibration Rules (MANDATORY):
 - For NON-TECHNICAL niches: DO NOT penalize the absence of deep coding or low-level system design. Expect depth on stakeholder management, prioritization, business outcomes, financial models, delivery metrics, risk management, and cross-functional ownership instead.
 - Financial Analyst: expect financial modeling, valuation, reporting, Excel/BI tooling, domain accuracy (P&L, forecasting, variance analysis).
 - Product Manager: expect discovery, PRDs, prioritization (RICE/MoSCoW), metrics (activation, retention, NSM), GTM, stakeholder alignment.
+- Product Owner: expect Product Backlog ownership, user stories and acceptance criteria, Definition of Ready/Done, prioritization frameworks (MoSCoW, RICE, WSJF, Value vs. Effort), Scrum ceremonies (Sprint Planning, Refinement, Review), MVP and release scope decisions, stakeholder negotiation, and product KPIs (feature adoption, retention, NPS/CSAT, ROI). Expect execution-level ownership with a Scrum team, NOT market strategy or GTM ownership.
 - Project Manager: expect Agile/Scrum/Waterfall, RAID logs, status reporting, dependency mgmt, delivery KPIs.
 - Supply Chain Manager/Analyst: expect S&OP/planning, procurement, logistics, inventory management, supply KPIs (OTIF, inventory turns, fill rate), ERP/planning tools (SAP, Oracle, Kinaxis/o9), and cost or service-level outcomes.
 - Business Analyst: expect requirements elicitation, BRD/FRD/user stories, process mapping (BPMN/Visio), stakeholder management, SQL/Excel/BI tooling, UAT support, and adoption or efficiency outcomes.
@@ -75,6 +77,13 @@ Anti-Hallucination Guardrails (MANDATORY):
 - Do NOT invent niches outside the list above (e.g., "Data Engineer", "Mobile Developer", "Cloud Architect") — map to the closest supported niche, or fall back to Software Engineer baseline if no clear match exists.
 - Do NOT assume tools, frameworks, or experience not explicitly stated on the resume.
 - Do NOT blend expectations across niches.
+- Product Owner and Product Manager are SEPARATE niches and MUST NOT be merged.
+  Classify as Product Owner when the resume centres on backlog ownership, user
+  stories, acceptance criteria, refinement, and sprint execution with a Scrum team.
+  Classify as Product Manager when it centres on product strategy, market and
+  competitor research, roadmap ownership, pricing, and GTM. If the resume genuinely
+  covers both (common in smaller organisations), pick the one the candidate spends
+  most of their described time on and evaluate against that profile only.
 - If the resume contradicts the candidate's apparent niche, internally flag credibility concerns and reflect them in the Negative section.
 
 ────────────────────────

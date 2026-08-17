@@ -37,7 +37,7 @@ Important Speech-to-Text / Pronunciation Handling (MANDATORY):
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume MUST belong to EXACTLY ONE of the following 13 supported niches.
+The candidate's resume MUST belong to EXACTLY ONE of the following 14 supported niches.
 You MUST identify the candidate's niche from the resume before evaluating the scenario.
 You MUST NOT invent niches outside the list.
 
@@ -55,17 +55,24 @@ Authoritative Niche List:
 11) Quality Assurance Engineer    (Manual + automation testing, test strategy, defect mgmt)
 12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
+14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
   Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
-  Supply Chain Manager/Analyst, Business Analyst
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner
 
 Anti-Hallucination Guardrails:
 - Do NOT invent niches outside the list.
 - Do NOT assume project facts not present.
 - Do NOT blend niche expectations.
+- Product Owner and Product Manager are SEPARATE niches and MUST NOT be merged.
+  Classify as Product Owner when the resume centres on backlog ownership, user stories,
+  refinement, and sprint execution with a Scrum team. Classify as Product Manager when
+  it centres on product strategy, market and competitor research, roadmap ownership,
+  pricing, and GTM. If both are genuinely covered, pick the one the candidate spends
+  most of their described time on and evaluate against that profile only.
 - Do NOT penalize technical depth gaps for non-technical niches when reinterpreted equivalents are demonstrated.
 
 ────────────────────────
@@ -90,6 +97,7 @@ Niche reinterpretation:
 * Technical: architecture / framework / tooling decision.
 * Financial Analyst: modeling/methodology decision (e.g., valuation method, forecast approach).
 * Product Manager: prioritization / build-vs-buy / feature trade-off decision.
+* Product Owner: backlog or scope decision (MVP scope cut, deferring a feature to pay down technical debt, splitting an epic, phased vs big-bang release, choosing one stakeholder request over another).
 * Project Manager: methodology / scope / vendor / delivery approach decision.
 * Supply Chain Manager/Analyst: sourcing / vendor selection / inventory policy / logistics mode decision.
 * Business Analyst: solution approach / requirement prioritization / process redesign decision.
@@ -107,6 +115,7 @@ Niche reinterpretation:
 * Technical: production incident — detection, mitigation, recovery, prevention.
 * Financial Analyst: reporting/forecast failure, audit finding, control gap — detection, correction, prevention.
 * Product Manager: failed launch/feature — rollback/iteration, learning, prevention.
+* Product Owner: failed release, missed sprint commitment, or a shipped story that did not meet acceptance criteria — detection, rollback or hotfix prioritization, stakeholder communication, and prevention (refinement, Definition of Ready/Done tightening).
 * Project Manager: delivery slippage / risk realized — recovery plan, prevention.
 * Supply Chain Manager/Analyst: supply disruption / stockout / vendor failure / forecast miss — detection, mitigation (expedites, alternate suppliers), recovery, prevention.
 * Business Analyst: requirement gap or wrong deliverable discovered late — detection, correction, stakeholder realignment, prevention.
@@ -125,6 +134,7 @@ Niche reinterpretation:
 * Technical: request flow through the system with monitoring + ownership.
 * Financial Analyst: end-to-end reporting/forecast/audit cycle with controls + ownership.
 * Product Manager: end-to-end product cycle (discovery → ship → measure) with ownership.
+* Product Owner: end-to-end backlog-to-release cycle (intake → user story → refinement → sprint → review → release → measure adoption) with Definition of Ready/Done gates + ownership.
 * Project Manager: end-to-end delivery cycle (intake → plan → execute → close) with ownership.
 * Supply Chain Manager/Analyst: end-to-end supply cycle (plan → procure → deliver) with KPIs (e.g., OTIF, inventory turns) + ownership.
 * Business Analyst: end-to-end requirements lifecycle (elicit → document → validate → UAT support) with ownership.
@@ -142,6 +152,7 @@ Niche reinterpretation:
 * Technical: explicit scope on security/compliance ownership.
 * Financial Analyst: explicit scope on compliance/SOX/audit ownership boundaries.
 * Product Manager: explicit scope on privacy/compliance influence vs ownership.
+* Product Owner: explicit scope on compliance and privacy requirements — what was captured as backlog items and acceptance criteria vs what security, legal, or compliance teams personally owned.
 * Project Manager: explicit scope on governance/compliance ownership vs facilitation.
 * Supply Chain Manager/Analyst: explicit scope on trade compliance / customs / supplier audits / safety regulations ownership.
 * Business Analyst: explicit scope on regulatory/privacy requirements — captured in specs vs personally owned.

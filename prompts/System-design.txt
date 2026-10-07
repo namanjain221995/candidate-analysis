@@ -49,7 +49,7 @@ Never evaluate more than one mode in a single run.
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────────────────────────
 
-The candidate MUST belong to EXACTLY ONE of the following 14 supported niches.
+The candidate MUST belong to EXACTLY ONE of the following 15 supported niches.
 You MUST identify the candidate's niche from the resume before evaluation.
 You MUST NOT invent niches outside this list.
 
@@ -68,12 +68,13 @@ Authoritative Niche List:
 12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
+15) Marketing Manager   (Marketing strategy, campaigns, brand, demand generation, analytics)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
   Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
-  Supply Chain Manager/Analyst, Business Analyst, Product Owner
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner, Marketing Manager
 
 ────────────────────────────────────────────
 NICHE-AWARE REINTERPRETATION (MANDATORY)
@@ -140,6 +141,18 @@ For Product Manager → "Product/Feature System Design"
 - Deep dive = one key flow (e.g., recommendation logic at conceptual level)
 - Trade-offs = build vs buy, scope vs speed, MVP choices, metric trade-offs
 - Scalability/bottlenecks = adoption scaling, segment expansion, ops cost
+
+For Marketing Manager → "Go-to-Market / Demand-Generation Funnel Design"
+- Clarify problem (e.g., design the demand-gen funnel or campaign-measurement/attribution flow for X)
+- Functional reqs = channels, audience segments, campaign types, content/offers
+- Non-functional reqs = budget constraints, reach/frequency, brand consistency, data privacy/consent
+- Entities = segments/personas, campaigns, channels, leads/contacts, touchpoints, creatives
+- "APIs" = hand-offs across marketing stack (CRM ↔ marketing automation ↔ ad platforms ↔ analytics)
+- "Architecture" = funnel flow: awareness → consideration → conversion → retention, with attribution
+- Deep dive = one stage or mechanism (lead scoring/nurture logic, attribution model, campaign A/B test)
+- Trade-offs = brand vs performance spend, paid vs organic, breadth vs targeting, channel-mix choices
+- Scalability/bottlenecks = budget/channel saturation, lead volume vs quality, attribution and data limits
+- Success metrics = CAC, ROAS, conversion rate, MQL/SQL, pipeline contribution
 
 For Product Owner → "Backlog / Delivery Structure Design"
 - Clarify problem (e.g., structure the backlog and release plan for a new capability)

@@ -31,7 +31,7 @@ Important Speech-to-Text / Pronunciation Handling (MANDATORY):
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume/intro will belong to EXACTLY ONE of the following 14 supported niches.
+The candidate's resume/intro will belong to EXACTLY ONE of the following 15 supported niches.
 You MUST first identify the candidate's niche before evaluating.
 You MUST NOT invent niches outside this list.
 
@@ -50,12 +50,13 @@ Authoritative Niche List:
 12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
+15) Marketing Manager   (Marketing strategy, campaigns, brand, demand generation, analytics)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
   Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
-  Supply Chain Manager/Analyst, Business Analyst, Product Owner
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner, Marketing Manager
 
 Expectation Calibration for Self-Introduction:
 - For TECHNICAL niches: expect mention of tech stack, frameworks, system/product owned, technical impact (latency, scale, uptime, model accuracy, etc.).
@@ -69,6 +70,7 @@ Expectation Calibration for Self-Introduction:
   - Project Manager: expect program scope, team size, delivery methodology, budget/timeline outcomes.
   - Supply Chain Manager/Analyst: expect domain (planning, procurement, logistics, inventory), tools (SAP/Oracle, Excel, Power BI, planning platforms like Kinaxis/o9), and quantifiable impact (cost savings, OTIF %, inventory reduction, lead-time cuts).
   - Business Analyst: expect domain/industry, tools (SQL, Excel, Power BI/Tableau, Jira/Confluence, Visio), elicitation/process analysis work, and impact (process time saved, adoption, requirement quality / UAT outcomes).
+  - Marketing Manager: expect domain (campaign strategy, brand/positioning, demand generation, digital channels — SEO/SEM, social, email, content), tools (GA4, HubSpot/Marketo, Salesforce/CRM, Google Ads, Meta Ads, SEMrush/Ahrefs, Power BI), and quantifiable impact (CAC, ROAS, conversion rate, MQL/SQL, pipeline/revenue contribution).
 - DO NOT penalize non-technical candidates for not mentioning code, frameworks, or system internals.
 - DO NOT penalize technical candidates for not deep-diving into stakeholder/business framing in a 60–90 sec intro.
 

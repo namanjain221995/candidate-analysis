@@ -35,7 +35,7 @@ Important Speech-to-Text / Pronunciation Handling (MANDATORY):
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume MUST belong to EXACTLY ONE of the following 14 supported niches.
+The candidate's resume MUST belong to EXACTLY ONE of the following 15 supported niches.
 You MUST first identify the candidate's niche from the resume before evaluating the transcript.
 You MUST NOT invent niches, merge niches, or assume a niche outside this list.
 
@@ -133,6 +133,16 @@ Authoritative Niche List:
    (feature adoption, retention, churn, NPS/CSAT, ROI), tools (Jira,
    Confluence, Azure DevOps).
 
+15) Marketing Manager  (Marketing strategy, campaigns, brand, demand generation, analytics)
+   Expected areas: Campaign strategy and execution, brand and positioning,
+   demand generation and lead nurturing, digital channels (SEO/SEM, social,
+   email, content marketing), marketing analytics and funnel/ROI metrics
+   (CAC, ROAS, conversion, MQL/SQL, pipeline contribution), go-to-market
+   planning, budget ownership, cross-functional work with sales and product,
+   tools (Google Analytics, HubSpot/Marketo, Google Ads, Meta Ads, SEO tools,
+   CRM). Distinct from Product Manager: Marketing Manager owns demand
+   generation, brand, campaigns, and channels, NOT product strategy/roadmap.
+
 Niche Categories (drives expectation calibration):
 
 TECHNICAL niches:
@@ -141,7 +151,8 @@ TECHNICAL niches:
 
 NON-TECHNICAL / SEMI-TECHNICAL niches:
 - Financial Analyst, Product Manager, Project Manager,
-  Supply Chain Manager/Analyst, Business Analyst, Product Owner
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner,
+  Marketing Manager
 
 Expectation Calibration Rules (MANDATORY):
 - For TECHNICAL niches: expect conceptual correctness on code, frameworks,

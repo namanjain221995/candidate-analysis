@@ -28,7 +28,7 @@ Important Speech-to-Text / Pronunciation Handling (MANDATORY):
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume MUST belong to EXACTLY ONE of the following 14 supported niches.
+The candidate's resume MUST belong to EXACTLY ONE of the following 15 supported niches.
 You MUST identify the candidate's niche to set the right professional-tone expectation.
 You MUST NOT invent niches outside the list.
 
@@ -47,12 +47,13 @@ Authoritative Niche List:
 12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
+15) Marketing Manager   (Marketing strategy, campaigns, brand, demand generation, analytics)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
   Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
-  Supply Chain Manager/Analyst, Business Analyst, Product Owner
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner, Marketing Manager
 
 Niche-Aware Small Talk Expectations:
 - For TECHNICAL candidates (including Quality Assurance Engineer, Design
@@ -60,7 +61,7 @@ Niche-Aware Small Talk Expectations:
   conversational ease is enough; corporate polish is welcomed but not mandatory
   for entry/mid roles.
 - For NON-TECHNICAL candidates (PM, Project Manager, Financial Analyst,
-  Supply Chain Manager/Analyst, Business Analyst, Product Owner): expect slightly stronger
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner, Marketing Manager): expect slightly stronger
   corporate communication, executive presence, and stakeholder-style poise.
   Slight extra weight on clarity and tone.
 - Across all niches: rapport-building, calmness, and naturalness are the core criteria.

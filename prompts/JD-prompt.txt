@@ -53,7 +53,7 @@ Never evaluate more than one mode in a single run.
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────────────────────────
 
-The candidate's resume will belong to EXACTLY ONE of the following 14 supported niches.
+The candidate's resume will belong to EXACTLY ONE of the following 15 supported niches.
 You MUST identify the candidate's niche from the resume before evaluating.
 The JD may target the same or an adjacent niche.
 You MUST NOT invent niches outside the list.
@@ -73,12 +73,13 @@ Authoritative Niche List:
 12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
+15) Marketing Manager    (Marketing strategy, campaigns, brand, demand generation, analytics)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
   Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
-  Supply Chain Manager/Analyst, Business Analyst, Product Owner
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner, Marketing Manager
 
 Niche-Aware JD Mapping Expectations (MODE V):
 - For TECHNICAL candidates: expect alignment expressed in technical terms — stack
@@ -107,6 +108,10 @@ Niche-Aware JD Mapping Expectations (MODE V):
     fill rate, cost savings).
   - Business Analyst: alignment via elicitation and documentation (BRD/FRD/stories),
     process mapping, stakeholder alignment, SQL/BI tooling, and UAT/adoption outcomes.
+  - Marketing Manager: alignment via marketing scope (campaigns, brand/positioning,
+    demand generation, digital channels — SEO/SEM, social, email, content), marketing
+    tools (GA4, HubSpot/Marketo, Salesforce/CRM, Google Ads, Meta Ads, SEMrush/Ahrefs),
+    and marketing KPIs (CAC, ROAS, conversion, MQL/SQL, pipeline/revenue contribution).
 - DO NOT penalize a non-technical candidate for not mapping technical stack details.
 - DO NOT penalize a technical candidate for not mapping business framing if the JD is technical.
 - If the JD is clearly misaligned with the candidate's niche (e.g., PM resume vs SDE JD),

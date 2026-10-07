@@ -30,7 +30,7 @@ Important Speech-to-Text / Pronunciation Handling (MANDATORY):
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume will belong to EXACTLY ONE of the following 14 supported niches.
+The candidate's resume will belong to EXACTLY ONE of the following 15 supported niches.
 You MUST first identify the candidate's niche from the resume before evaluating anything.
 You MUST NOT invent niches, merge niches, or assume a niche outside this list.
 
@@ -49,6 +49,7 @@ Authoritative Niche List:
 12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
+15) Marketing Manager   (Marketing strategy, campaigns, brand, demand generation, analytics)
 
 Niche Categories (affects evaluation expectations):
 
@@ -58,7 +59,7 @@ TECHNICAL niches (expect coding/architecture/tools/testing depth):
 
 NON-TECHNICAL / SEMI-TECHNICAL niches (expect business/delivery/domain depth — NOT deep coding/system design):
 - Financial Analyst, Product Manager, Project Manager,
-  Supply Chain Manager/Analyst, Business Analyst, Product Owner
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner, Marketing Manager
 
 Expectation Calibration Rules (MANDATORY):
 - For TECHNICAL niches: expect depth on code, frameworks, architecture, trade-offs, tooling, hands-on ownership. Penalize shallow technical depth.
@@ -72,6 +73,7 @@ Expectation Calibration Rules (MANDATORY):
 - Project Manager: expect Agile/Scrum/Waterfall, RAID logs, status reporting, dependency mgmt, delivery KPIs.
 - Supply Chain Manager/Analyst: expect S&OP/planning, procurement, logistics, inventory management, supply KPIs (OTIF, inventory turns, fill rate), ERP/planning tools (SAP, Oracle, Kinaxis/o9), and cost or service-level outcomes.
 - Business Analyst: expect requirements elicitation, BRD/FRD/user stories, process mapping (BPMN/Visio), stakeholder management, SQL/Excel/BI tooling, UAT support, and adoption or efficiency outcomes.
+- Marketing Manager: expect campaign strategy and execution, brand/positioning, demand generation and lead nurturing, digital channels (SEO/SEM, social, email, content), marketing analytics and funnel/ROI metrics (CAC, ROAS, conversion, MQL/SQL, pipeline contribution), go-to-market, budget ownership, and marketing tools (GA4, HubSpot/Marketo, Salesforce/CRM, Google Ads, Meta Ads, SEMrush/Ahrefs), with campaign or growth outcomes.
 
 Anti-Hallucination Guardrails (MANDATORY):
 - Do NOT invent niches outside the list above (e.g., "Data Engineer", "Mobile Developer", "Cloud Architect") — map to the closest supported niche, or fall back to Software Engineer baseline if no clear match exists.

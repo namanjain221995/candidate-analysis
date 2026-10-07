@@ -37,7 +37,7 @@ Important Speech-to-Text / Pronunciation Handling (MANDATORY):
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume MUST belong to EXACTLY ONE of the following 14 supported niches.
+The candidate's resume MUST belong to EXACTLY ONE of the following 15 supported niches.
 You MUST identify the candidate's niche from the resume before evaluating the scenario.
 You MUST NOT invent niches outside the list.
 
@@ -56,12 +56,13 @@ Authoritative Niche List:
 12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
+15) Marketing Manager    (Marketing strategy, campaigns, brand, demand generation, analytics)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
   Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
-  Supply Chain Manager/Analyst, Business Analyst, Product Owner
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner, Marketing Manager
 
 Anti-Hallucination Guardrails:
 - Do NOT invent niches outside the list.
@@ -100,6 +101,7 @@ Niche reinterpretation:
 * Product Owner: backlog or scope decision (MVP scope cut, deferring a feature to pay down technical debt, splitting an epic, phased vs big-bang release, choosing one stakeholder request over another).
 * Project Manager: methodology / scope / vendor / delivery approach decision.
 * Supply Chain Manager/Analyst: sourcing / vendor selection / inventory policy / logistics mode decision.
+* Marketing Manager: channel-mix / budget allocation / positioning / campaign approach decision.
 * Business Analyst: solution approach / requirement prioritization / process redesign decision.
 * Quality Assurance Engineer: test strategy decision (automation vs manual, tool/framework choice, coverage vs release speed).
 * Design Verification: verification strategy decision (UVM reuse vs directed testbench, constrained-random vs directed coverage strategy, simulation vs formal, regression scope vs runtime).
@@ -118,6 +120,7 @@ Niche reinterpretation:
 * Product Owner: failed release, missed sprint commitment, or a shipped story that did not meet acceptance criteria — detection, rollback or hotfix prioritization, stakeholder communication, and prevention (refinement, Definition of Ready/Done tightening).
 * Project Manager: delivery slippage / risk realized — recovery plan, prevention.
 * Supply Chain Manager/Analyst: supply disruption / stockout / vendor failure / forecast miss — detection, mitigation (expedites, alternate suppliers), recovery, prevention.
+* Marketing Manager: campaign underperformance / budget overrun / channel or attribution failure — detection, mitigation (reallocate spend, creative/channel pivot), recovery, prevention.
 * Business Analyst: requirement gap or wrong deliverable discovered late — detection, correction, stakeholder realignment, prevention.
 * Quality Assurance Engineer: defect escaped to production or major test gap — detection, triage, fix verification, regression prevention.
 * Design Verification: bug escaped to silicon or a late-stage coverage hole — detection, root cause, fix verification, regression and coverage prevention.
@@ -137,6 +140,7 @@ Niche reinterpretation:
 * Product Owner: end-to-end backlog-to-release cycle (intake → user story → refinement → sprint → review → release → measure adoption) with Definition of Ready/Done gates + ownership.
 * Project Manager: end-to-end delivery cycle (intake → plan → execute → close) with ownership.
 * Supply Chain Manager/Analyst: end-to-end supply cycle (plan → procure → deliver) with KPIs (e.g., OTIF, inventory turns) + ownership.
+* Marketing Manager: end-to-end campaign cycle (plan → launch → optimize → report) with KPIs (CAC, ROAS, conversion, MQL/SQL) + ownership.
 * Business Analyst: end-to-end requirements lifecycle (elicit → document → validate → UAT support) with ownership.
 * Quality Assurance Engineer: end-to-end test lifecycle (plan → design → execute → defect mgmt → sign-off) with quality gates + ownership.
 * Design Verification: end-to-end verification lifecycle (plan → testbench → simulate → debug → coverage closure → sign-off) with regression gates + ownership.
@@ -155,6 +159,7 @@ Niche reinterpretation:
 * Product Owner: explicit scope on compliance and privacy requirements — what was captured as backlog items and acceptance criteria vs what security, legal, or compliance teams personally owned.
 * Project Manager: explicit scope on governance/compliance ownership vs facilitation.
 * Supply Chain Manager/Analyst: explicit scope on trade compliance / customs / supplier audits / safety regulations ownership.
+* Marketing Manager: explicit scope on brand/legal compliance and data-privacy/consent (GDPR/CAN-SPAM) ownership vs facilitation.
 * Business Analyst: explicit scope on regulatory/privacy requirements — captured in specs vs personally owned.
 * Quality Assurance Engineer: explicit scope on security/compliance testing performed vs what security or compliance teams owned.
 * Design Verification: explicit scope on verification sign-off authority — what was personally verified and signed off vs what RTL design, DFT, or physical-design teams owned.

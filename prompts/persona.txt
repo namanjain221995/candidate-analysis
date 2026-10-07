@@ -48,7 +48,7 @@ Never evaluate more than one persona in a single run.
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume MUST belong to EXACTLY ONE of the following 14 supported niches.
+The candidate's resume MUST belong to EXACTLY ONE of the following 15 supported niches.
 You MUST identify the candidate's niche from the resume before evaluating the transcript.
 You MUST NOT invent niches outside the list.
 
@@ -67,12 +67,13 @@ Authoritative Niche List:
 12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
+15) Marketing Manager   (Marketing strategy, campaigns, brand, demand generation, analytics)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
   Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
-  Supply Chain Manager/Analyst, Business Analyst, Product Owner
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner, Marketing Manager
 
 Niche-Aware Persona Expectations:
 
@@ -104,6 +105,9 @@ For NON-TECHNICAL niches:
     inventory and service KPIs (OTIF, inventory turns, fill rate).
   - Business Analyst → elicitation approach, requirement prioritization, stakeholder
     conflicts resolved, UAT outcomes and adoption.
+  - Marketing Manager → channel-mix, budget-allocation, positioning, and campaign-approach
+    decisions; demand-gen and brand outcomes; marketing KPIs (CAC, ROAS, conversion,
+    MQL/SQL, pipeline contribution).
 - Architect persona: REINTERPRET as "Strategic/Senior Decision Defense" —
   - Financial Analyst → defend a modeling/methodology choice (e.g., DCF vs comparables, top-down vs bottom-up forecast) with trade-offs.
   - Product Manager → defend a strategic product decision (e.g., build vs buy, sunset a feature, prioritization call) with trade-offs.
@@ -113,6 +117,7 @@ For NON-TECHNICAL niches:
   - Project Manager → defend a delivery decision (e.g., methodology switch, scope cut, vendor selection) with trade-offs.
   - Supply Chain Manager/Analyst → defend a supply decision (e.g., single vs dual sourcing, safety-stock policy, make-vs-buy, network redesign) with trade-offs.
   - Business Analyst → defend a solution/requirements decision (e.g., build vs configure, process redesign option, phased vs big-bang rollout) with trade-offs.
+  - Marketing Manager → defend a marketing decision (e.g., channel-mix shift, rebrand/repositioning, budget reallocation, killing an underperforming campaign) with trade-offs.
 - DO NOT require system-design trade-offs from non-technical candidates.
 - The TRADE-OFF DISCIPLINE is still mandatory — just in the candidate's own domain.
 

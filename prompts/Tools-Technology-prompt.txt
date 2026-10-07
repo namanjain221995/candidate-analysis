@@ -58,7 +58,7 @@ Never evaluate more than one mode in a single run.
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────────────────────────
 
-The candidate MUST belong to EXACTLY ONE of the following 14 supported niches.
+The candidate MUST belong to EXACTLY ONE of the following 15 supported niches.
 You MUST identify the candidate's niche from the resume before evaluation.
 You MUST NOT invent niches outside this list.
 
@@ -77,12 +77,13 @@ Authoritative Niche List:
 12) Design Verification (ASIC / SoC functional verification — SystemVerilog, UVM, coverage)
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
+15) Marketing Manager   (Marketing strategy, campaigns, brand, demand generation, analytics)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
   Quality Assurance Engineer, Design Verification, DevOps
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
-  Supply Chain Manager/Analyst, Business Analyst, Product Owner
+  Supply Chain Manager/Analyst, Business Analyst, Product Owner, Marketing Manager
 
 ────────────────────────────────────────────
 NICHE-AWARE "TOOLS" REINTERPRETATION (MANDATORY)
@@ -162,6 +163,16 @@ For Business Analyst:
 - "System" = the requirements-to-adoption lifecycle.
 - "End-to-end production system" = elicitation → documentation (BRD/FRD/stories) →
   design alignment → build support → UAT → adoption/measurement.
+
+For Marketing Manager:
+- Tools = web/marketing analytics (GA4, Adobe Analytics), marketing automation/CRM
+  (HubSpot, Marketo, Salesforce), paid ads (Google Ads, Meta Ads, LinkedIn Ads),
+  SEO/SEM (SEMrush, Ahrefs, Google Search Console), email (Mailchimp), CMS (WordPress),
+  BI (Power BI, Tableau), content/design (Canva).
+- "System" = the campaign planning, execution, and measurement cycle.
+- "End-to-end production system" = audience/segment → campaign plan → content & channels
+  (paid/SEO/email/social) → launch → funnel/attribution analytics → optimization (A/B tests)
+  → KPI review (CAC, ROAS, conversion, MQL/SQL, pipeline contribution).
 
 For ALL niches, the candidate must:
 - Explain the MAIN tools listed on their resume (core stack; minor tools optional)

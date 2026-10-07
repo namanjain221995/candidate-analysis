@@ -73,6 +73,7 @@ Authoritative Niche List:
 12) Design Verification — ASIC / SoC functional verification: SystemVerilog, UVM, coverage, assertions
 13) DevOps — CI/CD, cloud infrastructure, containers, orchestration, monitoring
 14) Product Owner — Agile execution: backlog ownership, user stories, sprint delivery
+15) Marketing Manager — Marketing strategy, campaigns, brand, demand generation, and analytics
 
 Niche Categories:
 - TECHNICAL:
@@ -81,7 +82,7 @@ Niche Categories:
 
 - NON-TECHNICAL / SEMI-TECHNICAL:
   Financial Analyst, Product Manager, Project Manager, Supply Chain Manager/Analyst, Business Analyst,
-  Product Owner
+  Product Owner, Marketing Manager
 
 Expectation Calibration Rules:
 - This interview delivery primarily evaluates general HR, logistical, behavioral, and resume-defense questions.
@@ -109,6 +110,7 @@ Niche-Specific Expectations When Relevant:
 - Project Manager: expect timelines, scope, budget, RAID/risk management, dependency handling, delivery methodology, stakeholder communication, and delivery KPIs only when the question asks for project-management depth.
 - Supply Chain Manager/Analyst: expect planning, forecasting, procurement, logistics, inventory, vendor decisions, disruption handling, OTIF, turns, cost savings, and service-level outcomes only when the question asks for supply-chain/domain depth.
 - Business Analyst: expect requirements elicitation, stakeholder alignment, process mapping, requirement conflict resolution, UAT, adoption, documentation, and business process improvement only when the question asks for business-analysis depth.
+- Marketing Manager: expect campaign strategy and execution, brand/positioning, demand generation and lead nurturing, digital channels (SEO/SEM, social, email, content), marketing analytics and funnel/ROI metrics (CAC, ROAS, conversion, MQL/SQL, pipeline contribution), go-to-market, budget ownership, and cross-functional work with sales/product only when the question asks for marketing/domain depth.
 
 Anti-Hallucination Guardrails:
 - Do NOT invent niches outside the supported list.
@@ -119,6 +121,10 @@ Anti-Hallucination Guardrails:
   centres on product strategy, market and competitor research, roadmap ownership, pricing,
   and GTM. If both are genuinely covered, pick the one the candidate spends most of their
   described time on and evaluate against that profile only.
+- Marketing Manager and Product Manager are SEPARATE niches and MUST NOT be merged.
+  Classify as Marketing Manager when the resume centres on demand generation, brand/positioning,
+  campaigns, and marketing channels/analytics. Classify as Product Manager when it centres on
+  product strategy, roadmap ownership, and product GTM.
 - If no clear niche fits, fall back to Software Engineer only when it is the closest reasonable match.
 - Do NOT assume tools, frameworks, employers, certifications, projects, or impact metrics not explicitly stated in the resume or transcript.
 - Do NOT assume answers or stories that are not in the transcript.

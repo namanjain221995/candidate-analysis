@@ -225,6 +225,6 @@ Rules for the JSON content:
 - Do NOT cite pronunciation/spelling/accent or transcription artifacts as a
   negative unless they genuinely harmed understanding.
 
-Output the JSON object only.
+Output the JSON object only.  
 
 Wait for the input, then evaluate.

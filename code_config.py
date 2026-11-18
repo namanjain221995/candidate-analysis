@@ -143,16 +143,37 @@ CODE_SETTINGS = CodeSettings()
 # assignment folder omits the topic. Day-number rules come first; topic rules are a
 # fallback for folders that omit the number. Advanced AI-ML Training curriculum:
 #   Day 1 ML Fundamentals · Day 2 Regression · Day 3 Classification ·
-#   Day 4 Model Optimization · Day 5 Unsupervised Learning · Day 6 NLP
+#   Day 4 Model Optimization · Day 5 Unsupervised Learning · Day 6 NLP ·
+#   Day 7 ANN · Day 8 ANN Advanced · Day 9 CNN · Day 10 RNN · Day 11 LSTM/GRU ·
+#   Day 12 Transformers
 CODE_DELIVERABLE_RULES = [
-    # day-number (most reliable — present on the Day/training-step folder)
-    ("day 1", "day-1-ml-fundamentals.txt"),
-    ("day 2", "day-2-regression.txt"),
-    ("day 3", "day-3-classification.txt"),
-    ("day 4", "day-4-model-optimization.txt"),
-    ("day 5", "day-5-unsupervised.txt"),
-    ("day 6", "day-6-nlp.txt"),
-    # topic fallbacks (if a folder omits the day number)
+    # day-number (most reliable — present on the Day/training-step folder).
+    # ORDER MATTERS: match_code_prompt returns the FIRST substring match, and
+    # "day 1" is a substring of "day 10"/"day 11"/"day 12". The two-digit days
+    # MUST come before "day 1", or Day 10/11/12 folders wrongly match "day 1".
+    ("day 10", "day-10-rnn.txt"),
+    ("day 11", "day-11-lstm.txt"),
+    ("day 12", "day-12-transformers.txt"),
+    ("day 1",  "day-1-ml-fundamentals.txt"),
+    ("day 2",  "day-2-regression.txt"),
+    ("day 3",  "day-3-classification.txt"),
+    ("day 4",  "day-4-model-optimization.txt"),
+    ("day 5",  "day-5-unsupervised.txt"),
+    ("day 6",  "day-6-nlp.txt"),
+    ("day 7",  "day-7-ann.txt"),
+    ("day 8",  "day-8-ann-advanced.txt"),
+    ("day 9",  "day-9-cnn.txt"),
+    # topic fallbacks (if a folder omits the day number) — MOST SPECIFIC FIRST, so a
+    # deep-learning topic matches before a generic word like "classification" (which
+    # appears in several Day 9-11 titles, e.g. "Image Classifier", "Text Classification").
+    ("convolutional",                 "day-9-cnn.txt"),
+    ("recurrent neural",              "day-10-rnn.txt"),
+    ("lstm",                          "day-11-lstm.txt"),
+    ("gru",                           "day-11-lstm.txt"),
+    ("transformer",                   "day-12-transformers.txt"),
+    ("ann advance",                   "day-8-ann-advanced.txt"),
+    ("advanced neural",               "day-8-ann-advanced.txt"),
+    ("artificial neural network",     "day-7-ann.txt"),
     ("machine learning fundamentals", "day-1-ml-fundamentals.txt"),
     ("regression",                    "day-2-regression.txt"),
     ("classification",                "day-3-classification.txt"),

@@ -134,53 +134,58 @@ class CodeSettings:
 CODE_SETTINGS = CodeSettings()
 
 
-# ── Deliverable/Day → prompt mapping ──────────────────────────────────────────
+# ── Deliverable → prompt mapping (TOPIC-based) ────────────────────────────────
 #
-# Matching mirrors the LLM stage (llm_config.match_rule): the match context is
-# lowercased, underscores→spaces, spaces collapsed; FIRST substring match wins.
-# The worker passes "<day folder> <deliverable folder>" as the context, so the Day
-# folder name ("Day 2 - Regression(...)") reliably selects the rubric even if the
-# assignment folder omits the topic. Day-number rules come first; topic rules are a
-# fallback for folders that omit the number. Advanced AI-ML Training curriculum:
-#   Day 1 ML Fundamentals · Day 2 Regression · Day 3 Classification ·
-#   Day 4 Model Optimization · Day 5 Unsupervised Learning · Day 6 NLP ·
-#   Day 7 ANN · Day 8 ANN Advanced · Day 9 CNN · Day 10 RNN · Day 11 LSTM/GRU ·
-#   Day 12 Transformers
+# Matching mirrors the LLM stage: the context is lowercased, underscores→spaces,
+# spaces collapsed; FIRST substring match wins. code_worker matches on the
+# DELIVERABLE folder name first (e.g. "Natural Language Processing Coding
+# Assignment"), falling back to "<day folder> <deliverable>" only if that yields no
+# topic. We key on the TOPIC, not the day number: the 15-day calendar renumbered the
+# topics AND puts BOTH Day-8 ANN assignments (Fundamentals and Advanced Concepts)
+# under one day folder, so the day number is ambiguous but the topic is not. The
+# rubric FILE names match the new day numbers (both Day-8 ANN assignments share the
+# "day-8-" prefix, distinguished by the "-advanced" suffix).
+# 15-day curriculum: D1 ML Fundamentals · D2 Regression · D3 Classification ·
+# D4 Model Optimization · D6 Unsupervised · D7 NLP · D8 ANN Fundamentals + ANN
+# Advanced · D9 CNN · D11 RNN · D12 LSTM/GRU · D13 Transformers
+# (D5/D10/D14 revision, D15 combined mock — no coding deliverable).
 CODE_DELIVERABLE_RULES = [
-    # day-number (most reliable — present on the Day/training-step folder).
-    # ORDER MATTERS: match_code_prompt returns the FIRST substring match, and
-    # "day 1" is a substring of "day 10"/"day 11"/"day 12". The two-digit days
-    # MUST come before "day 1", or Day 10/11/12 folders wrongly match "day 1".
-    ("day 10", "day-10-rnn.txt"),
-    ("day 11", "day-11-lstm.txt"),
-    ("day 12", "day-12-transformers.txt"),
-    ("day 1",  "day-1-ml-fundamentals.txt"),
-    ("day 2",  "day-2-regression.txt"),
-    ("day 3",  "day-3-classification.txt"),
-    ("day 4",  "day-4-model-optimization.txt"),
-    ("day 5",  "day-5-unsupervised.txt"),
-    ("day 6",  "day-6-nlp.txt"),
-    ("day 7",  "day-7-ann.txt"),
-    ("day 8",  "day-8-ann-advanced.txt"),
-    ("day 9",  "day-9-cnn.txt"),
-    # topic fallbacks (if a folder omits the day number) — MOST SPECIFIC FIRST, so a
-    # deep-learning topic matches before a generic word like "classification" (which
-    # appears in several Day 9-11 titles, e.g. "Image Classifier", "Text Classification").
-    ("convolutional",                 "day-9-cnn.txt"),
-    ("recurrent neural",              "day-10-rnn.txt"),
-    ("lstm",                          "day-11-lstm.txt"),
-    ("gru",                           "day-11-lstm.txt"),
-    ("transformer",                   "day-12-transformers.txt"),
+    # MOST SPECIFIC FIRST: deep-learning topics precede generic words like
+    # "classification"/"regression" that also appear in problem statements.
+    ("advanced concept",              "day-8-ann-advanced.txt"),   # D8 ANN Advanced
     ("ann advance",                   "day-8-ann-advanced.txt"),
-    ("advanced neural",               "day-8-ann-advanced.txt"),
-    ("artificial neural network",     "day-7-ann.txt"),
-    ("machine learning fundamentals", "day-1-ml-fundamentals.txt"),
-    ("regression",                    "day-2-regression.txt"),
-    ("classification",                "day-3-classification.txt"),
+    ("artificial neural network",     "day-8-ann.txt"),            # D8 ANN Fundamentals
+    ("transformer",                   "day-13-transformers.txt"),  # D13 Transformers
+    # LSTM/GRU before "recurrent": the D12 title "LSTM & Gated Recurrent Unit (GRU)"
+    # contains "recurrent", which would otherwise steal it to the RNN rubric.
+    ("lstm",                          "day-12-lstm.txt"),          # D12 LSTM/GRU
+    ("gru",                           "day-12-lstm.txt"),
+    ("convolutional",                 "day-9-cnn.txt"),            # D9 CNN
+    ("recurrent",                     "day-11-rnn.txt"),           # D11 RNN
+    ("unsupervised",                  "day-6-unsupervised.txt"),   # D6 Unsupervised
+    ("natural language",              "day-7-nlp.txt"),            # D7 NLP
+    ("nlp",                           "day-7-nlp.txt"),
     ("model optimization",            "day-4-model-optimization.txt"),
-    ("unsupervised",                  "day-5-unsupervised.txt"),
-    ("natural language",              "day-6-nlp.txt"),
-    ("nlp",                           "day-6-nlp.txt"),
+    ("classification",                "day-3-classification.txt"),
+    ("regression",                    "day-2-regression.txt"),
+    ("machine learning fundamental",  "day-1-ml-fundamentals.txt"),
+    # ── DAY-NUMBER FALLBACK ────────────────────────────────────────────────────
+    # Last resort when a deliverable/day folder carries NO topic word (just "Day N").
+    # Topic rules above always win first. Two-digit days precede "day 1" because
+    # "day 1" is a substring of "day 11"/"day 12"/"day 13". NO "day 8" rule: Day 8
+    # holds BOTH ANN assignments (Fundamentals + Advanced), so the number cannot
+    # disambiguate them — a topic-less Day-8 name falls through to the default prompt.
+    # Days 5/10/14 (revision) and 15 (mock) have no coding deliverable, so no rule.
+    ("day 13", "day-13-transformers.txt"),
+    ("day 12", "day-12-lstm.txt"),
+    ("day 11", "day-11-rnn.txt"),
+    ("day 9",  "day-9-cnn.txt"),
+    ("day 7",  "day-7-nlp.txt"),
+    ("day 6",  "day-6-unsupervised.txt"),
+    ("day 4",  "day-4-model-optimization.txt"),
+    ("day 3",  "day-3-classification.txt"),
+    ("day 2",  "day-2-regression.txt"),
+    ("day 1",  "day-1-ml-fundamentals.txt"),
 ]
 
 # Generic fallback prompt (a real, working evaluator) used if no Day rule matches.
@@ -189,7 +194,9 @@ DEFAULT_CODE_PROMPT = _str("CODE_DEFAULT_PROMPT", "code-eval.txt")
 
 def match_code_prompt(match_context: str) -> str:
     """Pick the rubric prompt file for a coding assignment. `match_context` is the
-    Day folder name + deliverable folder name (see code_worker)."""
+    deliverable folder name (code_worker tries that first, then falls back to
+    "<day folder> <deliverable folder>"). Returns DEFAULT_CODE_PROMPT if nothing
+    matches."""
     name = " ".join((match_context or "").lower().replace("_", " ").split())
     for needle, prompt_file in CODE_DELIVERABLE_RULES:
         if needle in name:

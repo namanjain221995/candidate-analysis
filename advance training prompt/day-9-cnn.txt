@@ -375,7 +375,7 @@ RB2. EXACT CNN ARCHITECTURE - 25
   6-11  : FLATTEN MISSING (A3), wrong hidden ACTIVATIONS, a non-softmax output (A2), or the conv/
           pool order scrambled - structurally off.
   2-5   : a network exists but bears little resemblance (e.g. a plain Dense-only ANN on flattened
-          pixels - which is Day 7/8, not a CNN).
+          pixels - which is Day 8, not a CNN).
   0-1   : no neural network defined (see OFF-TASK cap if a non-NN model was used).
   HARD CAPS:
     - No Conv2D anywhere (a Dense-only ANN or an sklearn model instead of a CNN) -> cap RB2 at 6 AND
@@ -481,7 +481,7 @@ TOTAL CAPS:
     path) -> TOTAL <= 40. Suspicion WITHOUT proof never caps - record it labelled UNVERIFIED and
     score normally. An unset random_state / non-deterministic accuracy is NOT fabrication.
   - OFF-TASK CAP: the submission does not build a Keras/deep-learning CNN with Conv2D at all - e.g.
-    a Dense-only ANN on flattened pixels (that is Day 7/8), an sklearn model, or no image
+    a Dense-only ANN on flattened pixels (that is Day 8), an sklearn model, or no image
     classification. The core Day-9 goal (a convolutional classifier) is missed; RB2 and much of the
     rest collapse. Award only what genuinely maps and cap TOTAL at 50.
 

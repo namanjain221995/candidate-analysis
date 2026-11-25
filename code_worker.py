@@ -45,7 +45,7 @@ import llm_s3
 import salesforce
 import llm_processor
 import code_processor
-from code_config import CODE_SETTINGS, match_code_prompt
+from code_config import CODE_SETTINGS, match_code_prompt, DEFAULT_CODE_PROMPT
 
 _stop = threading.Event()
 
@@ -283,11 +283,16 @@ def _handle(s3, client, body: dict):
 
     deliverable_prefix = llm_s3.prefix_of(key)
     deliverable_name = llm_s3.deliverable_name_from_prefix(deliverable_prefix)
-    # The Day (training-step) folder carries the day number + topic, e.g.
-    # "Day 2 - Regression(...)"; combine it with the deliverable name so the rubric
-    # prompt is picked reliably even if the assignment folder omits either.
     day_name = llm_s3.deliverable_name_from_prefix(llm_s3.parent_prefix(deliverable_prefix))
-    prompt_file = match_code_prompt(f"{day_name} {deliverable_name}")
+    # Rubric selection is TOPIC-based (the deliverable folder carries the topic, e.g.
+    # "Natural Language Processing Coding Assignment"). Match on the DELIVERABLE name
+    # FIRST: the 15-day calendar renumbered the topics and puts BOTH Day-8 ANN
+    # assignments ("ANN Fundamentals" and "ANN Advanced Concepts") under one day
+    # folder, so the day name alone is ambiguous. Only if the deliverable name has no
+    # topic do we fall back to the day+deliverable string.
+    prompt_file = match_code_prompt(deliverable_name)
+    if prompt_file == DEFAULT_CODE_PROMPT:
+        prompt_file = match_code_prompt(f"{day_name} {deliverable_name}")
 
     # duplicate-event guard BEFORE any attempt/grading
     identity = _dedup_identity(body)

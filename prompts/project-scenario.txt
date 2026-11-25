@@ -37,7 +37,7 @@ Important Speech-to-Text / Pronunciation Handling (MANDATORY):
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume MUST belong to EXACTLY ONE of the following 15 supported niches.
+The candidate's resume MUST belong to EXACTLY ONE of the following 16 supported niches.
 You MUST identify the candidate's niche from the resume before evaluating the scenario.
 You MUST NOT invent niches outside the list.
 
@@ -57,10 +57,11 @@ Authoritative Niche List:
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
 15) Marketing Manager    (Marketing strategy, campaigns, brand, demand generation, analytics)
+16) Frontend Developer   (UI engineering with HTML/CSS/JS/TypeScript and a modern framework — React/Angular/Vue)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
-  Quality Assurance Engineer, Design Verification, DevOps
+  Quality Assurance Engineer, Design Verification, DevOps, Frontend Developer
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
   Supply Chain Manager/Analyst, Business Analyst, Product Owner, Marketing Manager
 
@@ -106,6 +107,7 @@ Niche reinterpretation:
 * Quality Assurance Engineer: test strategy decision (automation vs manual, tool/framework choice, coverage vs release speed).
 * Design Verification: verification strategy decision (UVM reuse vs directed testbench, constrained-random vs directed coverage strategy, simulation vs formal, regression scope vs runtime).
 * DevOps: infrastructure or pipeline decision (IaC tool choice, managed vs self-hosted Kubernetes, rolling vs blue-green vs canary deployment, build vs buy for CI).
+* Frontend Developer: framework / state-management / rendering-strategy (CSR vs SSR) / component-library decision.
 Criteria (total 100):
 - Constraints and evaluation criteria stated ......................... 25
 - Chosen option with clear justification ............................. 25
@@ -125,6 +127,7 @@ Niche reinterpretation:
 * Quality Assurance Engineer: defect escaped to production or major test gap — detection, triage, fix verification, regression prevention.
 * Design Verification: bug escaped to silicon or a late-stage coverage hole — detection, root cause, fix verification, regression and coverage prevention.
 * DevOps: production outage, failed deployment, or pipeline breakage — detection/alerting, rollback, recovery, prevention (monitoring, automated gates).
+* Frontend Developer: performance regression / broken build / cross-browser or accessibility bug — detection, mitigation (profiling, code-splitting, fix+test), recovery, prevention.
 Criteria (total 100):
 - Detection: how the failure was noticed / alerting .................. 20
 - Immediate mitigation / first response .............................. 20
@@ -145,6 +148,7 @@ Niche reinterpretation:
 * Quality Assurance Engineer: end-to-end test lifecycle (plan → design → execute → defect mgmt → sign-off) with quality gates + ownership.
 * Design Verification: end-to-end verification lifecycle (plan → testbench → simulate → debug → coverage closure → sign-off) with regression gates + ownership.
 * DevOps: end-to-end delivery flow (commit → build → test → scan → provision → deploy → monitor) with quality gates + ownership.
+* Frontend Developer: end-to-end UI feature cycle (design → build components → integrate API → test → ship) with ownership and UX/perf KPIs.
 Criteria (total 100):
 - One clear, complete end-to-end walkthrough ......................... 30
 - Monitoring / measurement / control points included ................. 25
@@ -164,6 +168,7 @@ Niche reinterpretation:
 * Quality Assurance Engineer: explicit scope on security/compliance testing performed vs what security or compliance teams owned.
 * Design Verification: explicit scope on verification sign-off authority — what was personally verified and signed off vs what RTL design, DFT, or physical-design teams owned.
 * DevOps: explicit scope on security/compliance work — pipeline scanning, secrets management, IAM policies performed vs what security or platform teams owned.
+* Frontend Developer: explicit scope on accessibility (WCAG), client-side data-privacy, and frontend security (XSS/CSRF) ownership vs facilitation.
 Criteria (total 100):
 - What they personally implemented / owned ........................... 30
 - What they influenced (but did not own) ............................. 25

@@ -49,7 +49,7 @@ Never evaluate more than one mode in a single run.
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────────────────────────
 
-The candidate MUST belong to EXACTLY ONE of the following 15 supported niches.
+The candidate MUST belong to EXACTLY ONE of the following 16 supported niches.
 You MUST identify the candidate's niche from the resume before evaluation.
 You MUST NOT invent niches outside this list.
 
@@ -69,10 +69,11 @@ Authoritative Niche List:
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
 15) Marketing Manager   (Marketing strategy, campaigns, brand, demand generation, analytics)
+16) Frontend Developer   (UI engineering with HTML/CSS/JS/TypeScript and a modern framework — React/Angular/Vue)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
-  Quality Assurance Engineer, Design Verification, DevOps
+  Quality Assurance Engineer, Design Verification, DevOps, Frontend Developer
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
   Supply Chain Manager/Analyst, Business Analyst, Product Owner, Marketing Manager
 
@@ -119,6 +120,21 @@ For DevOps → "Infrastructure / Delivery Pipeline Design"
 - Trade-offs = managed vs self-hosted, rolling vs blue-green vs canary,
   IaC tool choice, release speed vs gate strictness
 - Scalability/bottlenecks = build queue time, cluster capacity, state management, blast radius
+
+For Frontend Developer → "Frontend Application / Component Architecture Design"
+- Clarify problem (e.g., design the UI for X), the target users, devices and key screens
+- Functional reqs = user-facing capabilities, key screens and flows, interactions
+- Non-functional reqs = performance/Core Web Vitals, accessibility (a11y), responsiveness,
+  bundle size, SEO, browser/device support
+- Entities = components, props/inputs, view/UI state, client-side data models
+- "APIs" = REST/GraphQL endpoints consumed, data fetching/caching, auth token handling
+- "Architecture" = component tree and reuse, state management (local/global store),
+  routing, rendering strategy (CSR / SSR / SSG), build/bundling
+- Deep dive = one area (a complex component, state-management design, data-fetch/caching layer)
+- Trade-offs = framework/library choice, CSR vs SSR vs SSG, global store vs local state,
+  REST vs GraphQL, performance vs developer ergonomics
+- Scalability/bottlenecks = re-render cost, bundle growth, large lists/virtualization,
+  cache invalidation, design-system reuse across teams
 
 For Financial Analyst → "Financial Process / Model Design"
 - Clarify problem (e.g., build a forecasting framework, valuation model)
@@ -204,6 +220,7 @@ For Business Analyst → "Solution / Process Design"
 
 Diagram expectation by niche:
 - Technical: architecture/component/sequence diagrams (LLD/MLD/HLD).
+- Frontend Developer: component-tree / state-flow / data-fetch / user-flow diagrams.
 - QA: test-pipeline / quality-gate flow diagrams.
 - Design Verification: testbench topology / verification environment block diagrams.
 - DevOps: pipeline, deployment, and cloud infrastructure/network diagrams.

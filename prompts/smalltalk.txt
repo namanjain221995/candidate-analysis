@@ -28,7 +28,7 @@ Important Speech-to-Text / Pronunciation Handling (MANDATORY):
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume MUST belong to EXACTLY ONE of the following 15 supported niches.
+The candidate's resume MUST belong to EXACTLY ONE of the following 16 supported niches.
 You MUST identify the candidate's niche to set the right professional-tone expectation.
 You MUST NOT invent niches outside the list.
 
@@ -48,10 +48,11 @@ Authoritative Niche List:
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
 15) Marketing Manager   (Marketing strategy, campaigns, brand, demand generation, analytics)
+16) Frontend Developer   (UI engineering with HTML/CSS/JS/TypeScript and a modern framework — React/Angular/Vue)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
-  Quality Assurance Engineer, Design Verification, DevOps
+  Quality Assurance Engineer, Design Verification, DevOps, Frontend Developer
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
   Supply Chain Manager/Analyst, Business Analyst, Product Owner, Marketing Manager
 

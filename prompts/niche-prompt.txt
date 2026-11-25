@@ -35,7 +35,7 @@ Important Speech-to-Text / Pronunciation Handling (MANDATORY):
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume MUST belong to EXACTLY ONE of the following 15 supported niches.
+The candidate's resume MUST belong to EXACTLY ONE of the following 16 supported niches.
 You MUST first identify the candidate's niche from the resume before evaluating the transcript.
 You MUST NOT invent niches, merge niches, or assume a niche outside this list.
 
@@ -143,11 +143,21 @@ Authoritative Niche List:
    CRM). Distinct from Product Manager: Marketing Manager owns demand
    generation, brand, campaigns, and channels, NOT product strategy/roadmap.
 
+16) Frontend Developer  (UI engineering with HTML/CSS/JavaScript/TypeScript and a
+   modern framework — React/Angular/Vue)
+   Expected areas: Component architecture and reusable UI, HTML5/CSS3
+   (responsive design, accessibility/a11y), JavaScript and TypeScript,
+   a framework (React/Angular/Vue), state management (Redux/Context/NgRx/Pinia),
+   REST/GraphQL API integration, build tooling (Webpack/Vite), testing
+   (Jest/React Testing Library/Cypress), performance and rendering optimization,
+   cross-browser compatibility. Distinct from Java FSD / Python FSD: Frontend
+   Developer is UI/client-side only; FSD covers frontend plus backend.
+
 Niche Categories (drives expectation calibration):
 
 TECHNICAL niches:
 - Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
-  Quality Assurance Engineer, Design Verification, DevOps
+  Quality Assurance Engineer, Design Verification, DevOps, Frontend Developer
 
 NON-TECHNICAL / SEMI-TECHNICAL niches:
 - Financial Analyst, Product Manager, Project Manager,
@@ -200,7 +210,7 @@ INTERNAL EVALUATION STEPS (DO NOT DISPLAY)
 ────────────────────────
 
 Step 0 — Niche Identification (Internal)
-Identify the candidate's exact niche from the 14 supported niches.
+Identify the candidate's exact niche from the 16 supported niches.
 Lock the appropriate expectation profile (Technical vs Non-Technical) and PDF
 section (or the Expected areas fallback).
 

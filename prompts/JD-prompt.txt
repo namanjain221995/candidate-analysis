@@ -53,7 +53,7 @@ Never evaluate more than one mode in a single run.
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────────────────────────
 
-The candidate's resume will belong to EXACTLY ONE of the following 15 supported niches.
+The candidate's resume will belong to EXACTLY ONE of the following 16 supported niches.
 You MUST identify the candidate's niche from the resume before evaluating.
 The JD may target the same or an adjacent niche.
 You MUST NOT invent niches outside the list.
@@ -74,10 +74,11 @@ Authoritative Niche List:
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
 15) Marketing Manager    (Marketing strategy, campaigns, brand, demand generation, analytics)
+16) Frontend Developer   (UI engineering with HTML/CSS/JS/TypeScript and a modern framework — React/Angular/Vue)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
-  Quality Assurance Engineer, Design Verification, DevOps
+  Quality Assurance Engineer, Design Verification, DevOps, Frontend Developer
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
   Supply Chain Manager/Analyst, Business Analyst, Product Owner, Marketing Manager
 
@@ -92,6 +93,10 @@ Niche-Aware JD Mapping Expectations (MODE V):
   - DevOps: alignment via CI/CD ownership, Infrastructure as Code, containers and
     orchestration (Docker, Kubernetes/EKS), cloud platform scope, observability,
     and delivery/reliability metrics (deployment frequency, lead time, MTTR, uptime).
+  - Frontend Developer: alignment via UI scope (component architecture, responsive
+    HTML/CSS, accessibility, JS/TypeScript, a framework React/Angular/Vue, state
+    management, API integration), frontend tools (React/Vue/Angular, TypeScript,
+    Webpack/Vite, Jest/Cypress), and UX/performance outcomes.
 - For NON-TECHNICAL candidates:
   - Financial Analyst: alignment via domain (FP&A, valuation, audit), financial tools
     (Excel, Power BI, SAP, Bloomberg), and quantifiable financial outcomes.

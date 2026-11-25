@@ -30,7 +30,7 @@ Important Speech-to-Text / Pronunciation Handling (MANDATORY):
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume will belong to EXACTLY ONE of the following 15 supported niches.
+The candidate's resume will belong to EXACTLY ONE of the following 16 supported niches.
 You MUST first identify the candidate's niche from the resume before evaluating anything.
 You MUST NOT invent niches, merge niches, or assume a niche outside this list.
 
@@ -50,12 +50,13 @@ Authoritative Niche List:
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
 15) Marketing Manager   (Marketing strategy, campaigns, brand, demand generation, analytics)
+16) Frontend Developer   (UI engineering with HTML/CSS/JS/TypeScript and a modern framework — React/Angular/Vue)
 
 Niche Categories (affects evaluation expectations):
 
 TECHNICAL niches (expect coding/architecture/tools/testing depth):
 - Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
-  Quality Assurance Engineer, Design Verification, DevOps
+  Quality Assurance Engineer, Design Verification, DevOps, Frontend Developer
 
 NON-TECHNICAL / SEMI-TECHNICAL niches (expect business/delivery/domain depth — NOT deep coding/system design):
 - Financial Analyst, Product Manager, Project Manager,
@@ -66,6 +67,7 @@ Expectation Calibration Rules (MANDATORY):
   - Quality Assurance Engineer: expect test strategy, manual + automation depth (e.g., Selenium, Playwright, Cypress, Postman, JMeter), framework and CI integration, defect lifecycle ownership, and quality metrics (coverage %, defect leakage).
   - Design Verification: expect verification planning and requirement traceability, SystemVerilog/UVM testbench ownership, directed and constrained-random testing, assertions (SVA), functional and code coverage closure, regression and debug ownership (VCS/Xcelium, Verdi/SimVision), defect lifecycle with RTL designers, and protocol depth (AXI, PCIe, Ethernet, SerDes, CDC).
   - DevOps: expect CI/CD pipeline ownership (Jenkins, GitHub Actions, Argo CD), Infrastructure as Code (Terraform, CloudFormation, Ansible), containers and orchestration (Docker, Kubernetes/EKS, Helm), cloud services, monitoring and observability, incident response, and delivery/reliability outcomes (deployment frequency, lead time, MTTR, uptime).
+  - Frontend Developer: expect component architecture and reusable UI, HTML5/CSS3 (responsive, accessibility), JavaScript/TypeScript, a framework (React/Angular/Vue), state management (Redux/Context/NgRx), REST/GraphQL integration, build tooling (Webpack/Vite), testing (Jest/RTL/Cypress), and UX/performance outcomes.
 - For NON-TECHNICAL niches: DO NOT penalize the absence of deep coding or low-level system design. Expect depth on stakeholder management, prioritization, business outcomes, financial models, delivery metrics, risk management, and cross-functional ownership instead.
 - Financial Analyst: expect financial modeling, valuation, reporting, Excel/BI tooling, domain accuracy (P&L, forecasting, variance analysis).
 - Product Manager: expect discovery, PRDs, prioritization (RICE/MoSCoW), metrics (activation, retention, NSM), GTM, stakeholder alignment.

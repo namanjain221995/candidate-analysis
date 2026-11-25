@@ -31,7 +31,7 @@ Important Speech-to-Text / Pronunciation Handling (MANDATORY):
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────
 
-The candidate's resume/intro will belong to EXACTLY ONE of the following 15 supported niches.
+The candidate's resume/intro will belong to EXACTLY ONE of the following 16 supported niches.
 You MUST first identify the candidate's niche before evaluating.
 You MUST NOT invent niches outside this list.
 
@@ -51,10 +51,11 @@ Authoritative Niche List:
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
 15) Marketing Manager   (Marketing strategy, campaigns, brand, demand generation, analytics)
+16) Frontend Developer   (UI engineering with HTML/CSS/JS/TypeScript and a modern framework — React/Angular/Vue)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
-  Quality Assurance Engineer, Design Verification, DevOps
+  Quality Assurance Engineer, Design Verification, DevOps, Frontend Developer
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
   Supply Chain Manager/Analyst, Business Analyst, Product Owner, Marketing Manager
 
@@ -63,6 +64,7 @@ Expectation Calibration for Self-Introduction:
   - Quality Assurance Engineer: expect testing scope (manual/automation), tools and frameworks (e.g., Selenium, Playwright, Cypress, Postman, JMeter, CI integration), and impact (defect leakage reduction, automation coverage %, release confidence).
   - Design Verification: expect design type verified (IP/subsystem/SoC), methodology and tools (SystemVerilog, UVM, SVA, VCS/Xcelium, Verdi), protocols (AXI, PCIe, Ethernet, SerDes), and impact (coverage closure %, bugs found pre-silicon, regression pass rate, tape-out sign-off).
   - DevOps: expect platform/scale owned, tools (Jenkins/GitHub Actions, Terraform, Docker, Kubernetes/EKS, AWS, Prometheus/Grafana), and impact (deployment frequency, release lead time, MTTR, uptime, infrastructure cost savings).
+  - Frontend Developer: expect UI engineering (component architecture, responsive HTML/CSS, accessibility), JS/TypeScript + a framework (React/Angular/Vue), state management, API integration, tools (React/Vue/Angular, TypeScript, Webpack/Vite, Jest/Cypress), and UX/performance outcomes.
 - For NON-TECHNICAL niches:
   - Financial Analyst: expect domain (FP&A, equity research, audit), tools (Excel, Power BI, Tableau, SAP), and quantifiable business impact ($ savings, forecast accuracy, deal value).
   - Product Manager: expect product owned, user base, key metrics (DAU/MAU, retention, NPS), and outcome of decisions.

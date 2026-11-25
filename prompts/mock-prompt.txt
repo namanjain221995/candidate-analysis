@@ -74,11 +74,12 @@ Authoritative Niche List:
 13) DevOps — CI/CD, cloud infrastructure, containers, orchestration, monitoring
 14) Product Owner — Agile execution: backlog ownership, user stories, sprint delivery
 15) Marketing Manager — Marketing strategy, campaigns, brand, demand generation, and analytics
+16) Frontend Developer — UI engineering with HTML/CSS/JavaScript/TypeScript and a modern framework (React/Angular/Vue)
 
 Niche Categories:
 - TECHNICAL:
   Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer, Quality Assurance Engineer,
-  Design Verification, DevOps
+  Design Verification, DevOps, Frontend Developer
 
 - NON-TECHNICAL / SEMI-TECHNICAL:
   Financial Analyst, Product Manager, Project Manager, Supply Chain Manager/Analyst, Business Analyst,
@@ -111,6 +112,7 @@ Niche-Specific Expectations When Relevant:
 - Supply Chain Manager/Analyst: expect planning, forecasting, procurement, logistics, inventory, vendor decisions, disruption handling, OTIF, turns, cost savings, and service-level outcomes only when the question asks for supply-chain/domain depth.
 - Business Analyst: expect requirements elicitation, stakeholder alignment, process mapping, requirement conflict resolution, UAT, adoption, documentation, and business process improvement only when the question asks for business-analysis depth.
 - Marketing Manager: expect campaign strategy and execution, brand/positioning, demand generation and lead nurturing, digital channels (SEO/SEM, social, email, content), marketing analytics and funnel/ROI metrics (CAC, ROAS, conversion, MQL/SQL, pipeline contribution), go-to-market, budget ownership, and cross-functional work with sales/product only when the question asks for marketing/domain depth.
+- Frontend Developer: expect component architecture and reuse, HTML/CSS (responsive, accessibility), JavaScript/TypeScript, a framework (React/Angular/Vue), state management (Redux/Context/NgRx), REST/GraphQL API integration, build tooling (Webpack/Vite), testing (Jest/React Testing Library/Cypress), and performance/rendering optimization only when the question asks for technical depth.
 
 Anti-Hallucination Guardrails:
 - Do NOT invent niches outside the supported list.
@@ -125,6 +127,10 @@ Anti-Hallucination Guardrails:
   Classify as Marketing Manager when the resume centres on demand generation, brand/positioning,
   campaigns, and marketing channels/analytics. Classify as Product Manager when it centres on
   product strategy, roadmap ownership, and product GTM.
+- Frontend Developer and the Full-Stack niches (Java FSD / Python FSD) MUST NOT be merged.
+  Classify as Frontend Developer when the resume centres on UI/client-side work (HTML/CSS,
+  JavaScript/TypeScript, a UI framework). Classify as Java FSD / Python FSD when it clearly
+  covers BOTH the frontend and a server-side backend.
 - If no clear niche fits, fall back to Software Engineer only when it is the closest reasonable match.
 - Do NOT assume tools, frameworks, employers, certifications, projects, or impact metrics not explicitly stated in the resume or transcript.
 - Do NOT assume answers or stories that are not in the transcript.

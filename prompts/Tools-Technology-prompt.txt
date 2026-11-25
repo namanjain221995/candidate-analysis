@@ -58,7 +58,7 @@ Never evaluate more than one mode in a single run.
 SUPPORTED NICHES (MANDATORY REFERENCE — DO NOT HALLUCINATE)
 ────────────────────────────────────────────
 
-The candidate MUST belong to EXACTLY ONE of the following 15 supported niches.
+The candidate MUST belong to EXACTLY ONE of the following 16 supported niches.
 You MUST identify the candidate's niche from the resume before evaluation.
 You MUST NOT invent niches outside this list.
 
@@ -78,10 +78,11 @@ Authoritative Niche List:
 13) DevOps              (CI/CD, cloud infrastructure, containers, orchestration, monitoring)
 14) Product Owner       (Agile execution — backlog ownership, user stories, sprint delivery)
 15) Marketing Manager   (Marketing strategy, campaigns, brand, demand generation, analytics)
+16) Frontend Developer   (UI engineering with HTML/CSS/JS/TypeScript and a modern framework — React/Angular/Vue)
 
 Niche Categories:
 - TECHNICAL: Java FSD, Python FSD, AI/ML, Software Engineer, Python Developer,
-  Quality Assurance Engineer, Design Verification, DevOps
+  Quality Assurance Engineer, Design Verification, DevOps, Frontend Developer
 - NON-TECHNICAL: Financial Analyst, Product Manager, Project Manager,
   Supply Chain Manager/Analyst, Business Analyst, Product Owner, Marketing Manager
 
@@ -96,6 +97,16 @@ For TECHNICAL niches (Java FSD, Python FSD, AI/ML, Software Engineer, Python Dev
 - Tools = programming languages, frameworks, DBs, caches, queues, cloud, CI/CD, monitoring.
 - System = a production application/service.
 - "End-to-end production system" = request flow from client → backend → DB → response.
+
+For Frontend Developer:
+- Tools = JavaScript/TypeScript, a modern framework (React / Angular / Vue), HTML5/CSS3
+  (Sass, Tailwind), state management (Redux / Zustand / NgRx), build tooling (Webpack / Vite),
+  testing (Jest / Vitest, React Testing Library, Cypress), npm/yarn/pnpm, Git, Figma,
+  browser DevTools, Storybook.
+- "System" = a production web/UI application consuming backend APIs.
+- "End-to-end production system" = design (Figma) → component architecture → state management →
+  API integration (REST/GraphQL) → build/bundle → deploy (CDN) → performance and accessibility
+  (Core Web Vitals, bundle size, a11y).
 
 For Quality Assurance Engineer:
 - Tools = test frameworks and automation (Selenium, Playwright, Cypress, TestNG, PyTest),
